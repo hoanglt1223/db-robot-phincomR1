@@ -70,7 +70,7 @@ màn hình.
   </tr>
   <tr>
     <td align="center"><img src="docs/images/wifi.png" width="260" alt="Thẻ Wi-Fi"><br><b>Wi-Fi</b> — quét và đổi mạng cho loa</td>
-    <td align="center"><img src="docs/images/chat.png" width="260" alt="Khung Chat có ảnh nền"><br><b>Chat</b> — ảnh nền tuỳ chọn</td>
+    <td align="center"><img src="docs/images/chat.png" width="260" alt="Khung Chat có ảnh nền"><br><b>Chat</b> — nền hologram động hoặc ảnh tuỳ chọn</td>
     <td align="center"><img src="docs/images/media-dark.png" width="260" alt="Giao diện tối"><br><b>Giao diện tối</b></td>
   </tr>
 </table>
@@ -119,7 +119,7 @@ Hướng dẫn từng bước và cách xử lý trục trặc: [install/HUONG_D
 Hai nút nổi ở góc dưới bên phải mở khung **Chat** (gõ chữ thay cho nói, xem lại hội thoại) và
 **Log** (nhật ký hoạt động của loa). Hai nút ở góc dưới bên trái là **Tắt nghe** và **Gọi loa**
 (xem [Tắt nghe và gọi loa](#tắt-nghe-và-gọi-loa)). Trong khung Chat, nút hình ảnh ở góc trên cho
-phép chọn một **ảnh nền**; ảnh được lưu trên loa nên thiết bị nào mở trang cũng thấy. Mỗi thẻ có dòng mô tả ngắn và mục **Chi tiết** giải thích cách chỉnh.
+phép chọn **nền**: một trong 6 nền hologram động do trang tự vẽ, ảnh từ máy (JPG, PNG, GIF, WebP) hoặc link ảnh trên Internet. Lựa chọn được lưu trên loa nên thiết bị nào mở trang cũng thấy. Mỗi thẻ có dòng mô tả ngắn và mục **Chi tiết** giải thích cách chỉnh.
 
 ### Từ đánh thức
 
@@ -307,7 +307,7 @@ Bản release là bản để chạy trên loa (đã tối ưu bằng R8). `appl
 | `…/voicebot/domain/voice/VoiceGate.kt` | Tắt nghe từ đánh thức và gọi loa từ trang điều khiển |
 | `…/voicebot/net/Https.java` | Kết nối https với danh sách chứng chỉ gốc đi kèm ứng dụng |
 | `…/voicebot/net/WifiSetup.java` | Quét Wi-Fi và chuyển loa sang mạng khác, kể cả từ chế độ cài đặt mạng "Phicomm R1"; thất bại thì quay lại trạng thái cũ |
-| `…/voicebot/control/ChatBackground.java` | Lưu ảnh nền của khung Chat trên loa |
+| `…/voicebot/control/ChatBackground.java` | Lưu lựa chọn nền và ảnh nền của khung Chat trên loa |
 | `…/voicebot/update/` | Tự cập nhật: `Updater.java`, `AdbLoopback.java`, `UpdateManager.kt` |
 | `install/` | Bộ cài cho người dùng và script đóng gói bản phát hành |
 | `install/win/`, `install/make-setup-exe.py` | Chương trình khởi chạy của bộ cài Windows một tệp và công cụ ghép tệp vào nó |

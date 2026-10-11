@@ -5,6 +5,8 @@ và vào ô "Bản mới nhất" trong trang điều khiển của loa -- viết
 
 ## v1.5.8
 
+- **Nền động cho khung Chat**: 6 nền hologram do trang tự vẽ (Lõi AI, Robot, Địa cầu, Sóng âm, Lưới neon, Mưa số), chuyển động theo lúc loa nghe và trả lời. Bấm nút hình ảnh ở đầu khung Chat để chọn.
+- Ảnh nền từ máy nay nhận cả **GIF và WebP động** (tối đa 8 MB), và có thêm ô **dán link ảnh** trên Internet.
 - Phổ nhạc trong tab Media cao hơn và mịn hơn: 64 cột thay cho 40.
 
 ## v1.5.7

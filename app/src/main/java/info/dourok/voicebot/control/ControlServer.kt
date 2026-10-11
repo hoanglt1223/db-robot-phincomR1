@@ -167,6 +167,9 @@ class ControlServer @Inject constructor(
             // The picture behind the panel's chat, kept on the speaker so every device shows it.
             "/api/chat/bg" -> serveChatBackground()
             "/api/chat/bg/set" -> json(if (sameOrigin(session)) ChatBackground.save(context.filesDir, bodyOf(session)) else FOREIGN_ORIGIN)
+            // An animated picture, sent as it is (PUT, the file as the body) rather than redrawn.
+            "/api/chat/bg/put" -> json(if (sameOrigin(session)) ChatBackground.saveFile(context.filesDir, uploadOf(session, ChatBackground.MAX_RAW_BYTES.toLong())) else FOREIGN_ORIGIN)
+            "/api/chat/bg/style" -> json(if (sameOrigin(session)) ChatBackground.setStyle(context.filesDir, bodyOf(session)) else FOREIGN_ORIGIN)
             "/api/chat/bg/clear" -> json(ChatBackground.clear(context.filesDir))
             // Internet radio: the station list for the panel, play by key, and the relay the
             // on-device player reads the stream through (see MusicService.radioTrack).
@@ -452,6 +455,7 @@ class ControlServer @Inject constructor(
         o.put("voice_paused", info.dourok.voicebot.domain.voice.VoiceGate.paused)
         o.put("pause_on_music", Settings.pauseOnMusic)
         o.put("chat_bg", ChatBackground.stamp(context.filesDir))
+        o.put("chat_bg_style", ChatBackground.style(context.filesDir))
         // The speaker is broadcasting its own Wi-Fi: the panel points at the card that ends that.
         o.put("wifi_hotspot", wifi.isHotspotOn())
         // True whenever the wake word is being ignored, whichever of the two reasons applies, so
@@ -536,6 +540,23 @@ class ControlServer @Inject constructor(
         return try {
             session.parseBody(files)
             files["postData"] ?: ""
+        } catch (e: Exception) {
+            ""
+        }
+    }
+
+    /**
+     * A file sent as the body of a PUT: the path the server library left it at (it deletes the
+     * file when the request ends), or "" when nothing came or it is larger than [maxBytes] -- in
+     * which case the body is not read at all, so an oversized upload cannot fill the disk.
+     */
+    private fun uploadOf(session: IHTTPSession, maxBytes: Long): String {
+        val size = session.headers["content-length"]?.toLongOrNull() ?: return ""
+        if (size <= 0 || size > maxBytes) return ""
+        val files = HashMap<String, String>()
+        return try {
+            session.parseBody(files)
+            files["content"] ?: ""
         } catch (e: Exception) {
             ""
         }
