@@ -621,7 +621,7 @@ select::-ms-expand{display:none;}
   font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;}
 .mp-meta span{display:inline-block;padding-left:100%;animation:mp-marquee 22s linear infinite;}
 @keyframes mp-marquee{to{transform:translateX(-100%);}}
-.mp-viz{display:block;width:100%;height:112px;margin-top:10px;border-radius:10px;
+.mp-viz{display:block;width:100%;height:clamp(128px,19vh,172px);margin-top:10px;border-radius:10px;
   background:rgba(0,0,0,.42);border:1px solid var(--line);}
 [data-theme=light] .mp-viz{background:#0d1020;}
 .mp-row{display:flex;align-items:center;gap:8px;margin-top:9px;}
@@ -2446,9 +2446,10 @@ function vizDraw(){
     grad.addColorStop(0,`hsla(${hue},100%,50%,.92)`);
     grad.addColorStop(1,`hsla(${hue},100%,75%,.45)`);
     g.fillStyle=grad;
-    g.shadowBlur=10*dpr;g.shadowColor=`hsla(${hue},100%,50%,.8)`;
-    g.fillRect(x+bw*0.12,h-bh,bw*0.76,bh);
-    if(v>150&&Math.random()>0.93&&vizParts.length<90)
+    // glow scaled to the bar: at 64 bars a wide blur would merge them into one haze
+    g.shadowBlur=Math.min(10*dpr,bw*1.3);g.shadowColor=`hsla(${hue},100%,50%,.8)`;
+    g.fillRect(x+bw*0.14,h-bh,bw*0.72,bh);
+    if(v>150&&Math.random()<2.8/n&&vizParts.length<90)
       vizParts.push({x:x+bw/2,y:h-bh,vx:(Math.random()-0.5)*1.5*dpr,vy:(-Math.random()*3-1.5)*dpr,life:1,hue:hue});
   }
   g.shadowBlur=5*dpr;

@@ -46,8 +46,11 @@ object LocalMusicPlayer {
 
     private const val TICK_MS = 500L
 
-    /** Bars the panel draws. */
-    private const val BANDS = 40
+    /**
+     * Bars the panel draws. The window below has 512 bins, about 368 of them drawn, so 64 bars
+     * are all real readings (the lowest ~39 are one bin each); many more would only repeat bins.
+     */
+    private const val BANDS = 64
     /** FFT window asked of the platform (clamped to what it supports); 1024 gives ~43 Hz bins. */
     private const val FFT_SIZE = 1024
     /** Share of the spectrum drawn: above this there is little but hiss in a 128k MP3. */
