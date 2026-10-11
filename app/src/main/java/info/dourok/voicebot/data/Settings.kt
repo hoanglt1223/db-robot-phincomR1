@@ -143,6 +143,15 @@ object Settings {
         get() = prefs.getString("loc_tz", AppConfig.TIME_ZONE)!!
         set(v) = prefs.edit().putString("loc_tz", v).apply()
 
+    /** Read the speaker's network address out when it has changed (see net/SpeakerAddress). */
+    var announceIp: Boolean
+        get() = prefs.getBoolean("announce_ip", true)
+        set(v) = prefs.edit().putBoolean("announce_ip", v).apply()
+    /** The address the owner was last told, by announcement or by asking; "" = none yet. */
+    var lastAnnouncedIp: String
+        get() = prefs.getString("last_announced_ip", "")!!
+        set(v) = prefs.edit().putString("last_announced_ip", v).apply()
+
     /** Ignore the wake word while a song or a radio station is playing (see VoiceGate). */
     var pauseOnMusic: Boolean
         get() = prefs.getBoolean("pause_on_music", false)

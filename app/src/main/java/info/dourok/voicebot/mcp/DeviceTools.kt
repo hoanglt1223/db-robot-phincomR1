@@ -4,6 +4,7 @@ import info.dourok.voicebot.data.Settings
 import info.dourok.voicebot.media.LocalMusicPlayer
 import info.dourok.voicebot.media.MusicService
 import info.dourok.voicebot.media.RadioStations
+import info.dourok.voicebot.net.SpeakerAddress
 import info.dourok.voicebot.weather.LocationManager
 import org.json.JSONArray
 import org.json.JSONObject
@@ -120,6 +121,23 @@ object DeviceTools {
             success("Đang mở kênh ${station.name}")
         })
         .add(tool(
+            "self.network.get_ip_address",
+            "Trả về địa chỉ IP của loa trong mạng Wi-Fi và địa chỉ trang điều khiển của loa. " +
+                "LUÔN gọi công cụ này khi người dùng hỏi địa chỉ IP ('địa chỉ IP của loa là gì', " +
+                "'đọc địa chỉ IP', 'IP của bạn', 'địa chỉ mạng', 'what is your IP address') hoặc hỏi " +
+                "cách mở trang điều khiển, trang cài đặt của loa. Không bao giờ tự đoán địa chỉ. " +
+                "Kết quả có trường `speak`: hãy đọc nguyên văn trường đó cho người dùng, giữ " +
+                "nguyên từng chữ số. " +
+                "Returns the speaker's IP address and control panel URL; read the `speak` field " +
+                "aloud verbatim.",
+            noArguments(),
+        ) {
+            val ip = SpeakerAddress.current()
+            // Told on request: no need to read the same address out unasked afterwards.
+            if (SpeakerAddress.isAddress(ip)) Settings.lastAnnouncedIp = ip
+            SpeakerAddress.toolReply(ip)
+        })
+        .add(tool(
             "self.get_local_time",
             "Trả về ngày giờ địa phương chính xác tại nơi đặt loa của người dùng (đúng múi giờ " +
                 "của họ). LUÔN gọi công cụ này khi người dùng hỏi bây giờ là mấy giờ, hôm nay " +
@@ -150,6 +168,7 @@ object DeviceTools {
         } catch (e: Exception) {
             JSONObject()
         }
+        val ip = SpeakerAddress.current()
         return JSONObject()
             .put("audio_speaker", JSONObject().put("volume", DeviceActions.getVolume?.invoke() ?: -1))
             .put(
@@ -159,7 +178,11 @@ object DeviceTools {
                     .put("title", music.optString("title", ""))
                     .put("artist", music.optString("artist", ""))
             )
-            .put("network", JSONObject().put("type", "wifi"))
+            .put(
+                "network",
+                JSONObject().put("type", "wifi").put("ip", ip)
+                    .put("control_panel", if (ip.isEmpty()) "" else SpeakerAddress.panelUrl(ip))
+            )
             .put(
                 "location",
                 JSONObject().put("city", Settings.locName).put("timezone", LocationManager.zone.id)

@@ -191,9 +191,16 @@ những thiết bị đó dùng được ngay với loa.
 | "Có những kênh radio nào?" | `self.radio.get_stations` | — |
 | "Mấy giờ rồi?" | `self.get_local_time` | — |
 | "Thời tiết hôm nay?" | `self.get_weather` | `city` (tuỳ chọn) |
+| "Địa chỉ IP của bạn là gì?" | `self.network.get_ip_address` | — |
 
 `self.music.set_display_mode` cũng được khai báo cho tương thích, nhưng loa không có màn hình nên
 nó chỉ trả lời rằng không có gì để đổi.
+
+**Địa chỉ IP.** Loa không có màn hình, nên muốn biết địa chỉ để mở trang điều khiển thì hỏi loa:
+"địa chỉ IP của bạn là gì?". Loa đọc từng chữ số ("một chín hai, chấm, một sáu tám…") và cách mở
+trang điều khiển. Khi địa chỉ thay đổi — đổi mạng Wi-Fi, bộ phát cấp địa chỉ khác, hoặc loa vừa được
+kích hoạt lại với máy chủ — loa tự đọc địa chỉ mới một lần, trừ khoảng 22 giờ đến 7 giờ sáng. Tắt
+việc tự đọc bằng công tắc **Đọc to địa chỉ IP khi địa chỉ thay đổi** trong thẻ Wi-Fi.
 
 Nhạc và radio bắt đầu ngay sau khi trợ lý nói xong câu trả lời. Máy chủ phải hỗ trợ MCP trên thiết
 bị; các bản xiaozhi-esp32-server gần đây có sẵn.
@@ -307,6 +314,7 @@ Bản release là bản để chạy trên loa (đã tối ưu bằng R8). `appl
 | `…/voicebot/domain/voice/VoiceGate.kt` | Tắt nghe từ đánh thức và gọi loa từ trang điều khiển |
 | `…/voicebot/net/Https.java` | Kết nối https với danh sách chứng chỉ gốc đi kèm ứng dụng |
 | `…/voicebot/net/WifiSetup.java` | Quét Wi-Fi và chuyển loa sang mạng khác, kể cả từ chế độ cài đặt mạng "Phicomm R1"; thất bại thì quay lại trạng thái cũ |
+| `…/voicebot/net/SpeakerAddress.java` | Địa chỉ IP của loa và cách đọc nó thành lời |
 | `…/voicebot/control/ChatBackground.java` | Lưu lựa chọn nền và ảnh nền của khung Chat trên loa |
 | `…/voicebot/update/` | Tự cập nhật: `Updater.java`, `AdbLoopback.java`, `UpdateManager.kt` |
 | `install/` | Bộ cài cho người dùng và script đóng gói bản phát hành |

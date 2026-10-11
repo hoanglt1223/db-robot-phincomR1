@@ -3,6 +3,11 @@
 Mỗi bản một mục `## v<versionName>`. Khi phát hành, đoạn văn dưới mục đó được đưa vào trang Release
 và vào ô "Bản mới nhất" trong trang điều khiển của loa -- viết ngắn, cho người dùng đọc.
 
+## v1.5.10
+
+- **Hỏi loa địa chỉ IP**: nói "địa chỉ IP của bạn là gì?" — loa đọc từng số của địa chỉ và cách mở trang điều khiển.
+- **Loa tự đọc địa chỉ IP khi địa chỉ thay đổi** (đổi mạng, bộ phát cấp địa chỉ khác, hoặc sau khi kích hoạt lại với máy chủ), để bạn không bị mất đường vào trang điều khiển. Không đọc trong khoảng 22 giờ đến 7 giờ; tắt được trong thẻ Wi-Fi.
+
 ## v1.5.9
 
 - Giao diện trên điện thoại: đầu trang xếp lại thành hai hàng (logo, tên và số phiên bản ở trên; trạng thái và nút đổi giao diện ở dưới).

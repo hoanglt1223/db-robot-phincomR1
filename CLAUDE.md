@@ -320,6 +320,23 @@ công tắc + nút bật tay; chủ dự án bảo bỏ — đừng thêm lại)
   hotspot của nó không; firmware gốc có mở adb 5555 ở `192.168.43.1` không; app `com.phicomm.*`
   có giữ micro không (bộ cài chỉ in danh sách, không tắt gì).
 
+### Loa đọc địa chỉ IP — v1.5.10, CHƯA đo trên loa thật
+
+Loa không có TTS trên máy: mọi câu nói đều do máy chủ đọc. Nên "đọc IP" có hai đường, cả hai đi
+qua trợ lý:
+- **Hỏi thì trả lời**: công cụ MCP `self.network.get_ip_address` (`mcp/DeviceTools.kt`) trả JSON có
+  trường `speak` đã viết sẵn thành lời. `self.get_device_status` cũng có `network.ip`.
+- **Tự đọc khi địa chỉ đổi**: `ControlServer.watchAddress()` (luồng `address-watch`, 20 giây một
+  lần) so địa chỉ hiện tại với `Settings.lastAnnouncedIp`; khác thì hỏi lại OTA xem loa đã kích hoạt
+  chưa (bản lưu trong `ServerProvisioner` chỉ có từ lúc khởi động), rồi bắn
+  `AddressAnnouncement.flow`. `VoiceAssistant.announceAddress()` gửi một text query nhờ trợ lý đọc
+  nguyên văn. Thất bại thì **không chuông** và lùi dần (2, 4, 6 phút, tối đa 3 lần cho mỗi địa chỉ).
+  Không đọc khi đang nói chuyện, đang phát nhạc, 22h–7h, hay ở chế độ cài đặt mạng (`192.168.43.1`).
+- **Địa chỉ luôn được viết thành chữ trước khi rời loa** (`SpeakerAddress.spoken`: "một chín hai,
+  chấm, một sáu tám…"). Đưa "192.168.1.22" cho TTS thì mỗi engine đọc một kiểu.
+- Chỗ dễ sai: câu thông báo phụ thuộc LLM chịu nhắc lại nguyên văn; và `awaitServerFrame()` coi
+  BẤT KỲ frame nào là "máy chủ đã nhận", kể cả frame MCP ngay sau hello.
+
 ### adb rớt giữa một lần push để lại adbd chết mà cổng vẫn "open"
 
 Một lần `adb push` 15 MB bị đứt (`failed to read copy response: EOF`) làm **adbd trên R1 treo**:

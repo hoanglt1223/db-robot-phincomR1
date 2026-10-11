@@ -146,6 +146,7 @@ class VoiceAssistant @Inject constructor(
             launch { runAudioLoop() }
             launch { protocol.incomingJsonFlow.collect(::handleServerMessage) }
             launch { TextCommands.flow.collect { onTextCommand(it) } }
+            launch { AddressAnnouncement.flow.collect { announceAddress(it) } }
             launch { MediaCommands.flow.collect { onMediaCommand(it) } }
             launch {
                 VoiceCommands.flow.collect {
@@ -207,6 +208,42 @@ class VoiceAssistant @Inject constructor(
             backToWake()
             return
         }
+        state.value = VoiceState.SPEAKING
+    }
+
+    /**
+     * Have the assistant read the speaker's network address out, unasked (see
+     * [AddressAnnouncement]; ControlServer decides when).
+     *
+     * Sent the way a typed query is, but nobody is waiting for this one: it never interrupts a
+     * conversation, it is not written into the chat as something the owner said, and when the
+     * server does not answer it ends without the end-of-session chime -- a speaker that chimes by
+     * itself every few minutes while the Internet is down is worse than one that stays quiet.
+     */
+    private suspend fun announceAddress(ip: String) {
+        if (isAwake || ip == Settings.lastAnnouncedIp) return
+        AppLog.i("Địa chỉ của loa: ${info.dourok.voicebot.net.SpeakerAddress.panelUrl(ip)} -> đọc to cho người dùng")
+        val opened = protocol.isAudioChannelOpened() || protocol.openAudioChannel()
+        if (isAwake) return                       // someone woke the speaker while it was connecting
+        if (!opened) {
+            AddressAnnouncement.failures++
+            AppLog.w("Chưa đọc được địa chỉ IP: không nối được máy chủ")
+            return
+        }
+        isAwake = true
+        autoTurns = 0
+        val request = info.dourok.voicebot.net.SpeakerAddress.announceRequest(ip)
+        if (!protocol.sendTextQuery(request) || !awaitServerFrame()) {
+            isAwake = false
+            protocol.closeAudioChannel()
+            state.value = VoiceState.IDLE
+            wakeWord.reset()
+            AddressAnnouncement.failures++
+            AppLog.w("Chưa đọc được địa chỉ IP: máy chủ không phản hồi")
+            return
+        }
+        AddressAnnouncement.failures = 0
+        Settings.lastAnnouncedIp = ip
         state.value = VoiceState.SPEAKING
     }
 

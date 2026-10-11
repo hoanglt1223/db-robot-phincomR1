@@ -15,6 +15,7 @@ import info.dourok.voicebot.data.maskApiKey
 import info.dourok.voicebot.data.model.DeviceInfo
 import info.dourok.voicebot.domain.bluetooth.BtController
 import info.dourok.voicebot.domain.bluetooth.BtResult
+import info.dourok.voicebot.domain.voice.AddressAnnouncement
 import info.dourok.voicebot.domain.voice.AudioPlayback
 import info.dourok.voicebot.domain.voice.AppLog
 import info.dourok.voicebot.domain.voice.ConversationLog
@@ -27,6 +28,7 @@ import info.dourok.voicebot.domain.voice.MicTest
 import info.dourok.voicebot.domain.voice.ServerAudioParams
 import info.dourok.voicebot.domain.voice.TextCommands
 import info.dourok.voicebot.media.LocalMusicPlayer
+import info.dourok.voicebot.net.SpeakerAddress
 import info.dourok.voicebot.update.UpdateManager
 import info.dourok.voicebot.weather.LocationManager
 import okhttp3.MediaType.Companion.toMediaType
@@ -72,6 +74,72 @@ class ControlServer @Inject constructor(
         } catch (e: Exception) {
             Log.e(TAG, "start failed: ${e.message}")
         }
+        Thread({ watchAddress() }, "address-watch").apply { isDaemon = true }.start()
+    }
+
+    /**
+     * Has the speaker read its network address out when that address is not the one the owner was
+     * last told: a router that hands out a different one, or a move to another Wi-Fi, must not
+     * leave them unable to find this panel. See [SpeakerAddress] and
+     * [info.dourok.voicebot.domain.voice.VoiceAssistant], which does the talking.
+     *
+     * Not at night, not over a conversation or a song, and not before the speaker is registered
+     * with the server -- an unregistered speaker is answered with the activation prompt, not with
+     * what it asked to have said. The registration is asked about again just before each attempt,
+     * because the copy kept here dates from start-up.
+     */
+    private fun watchAddress() {
+        var seen = ""
+        var nextTryAt = 0L
+        var otaAsks = 0
+        try {
+            Thread.sleep(ADDRESS_FIRST_LOOK_MS)
+            while (true) {
+                try {
+                    val ip = SpeakerAddress.current()
+                    val now = android.os.SystemClock.elapsedRealtime()
+                    if (ip != seen) {
+                        seen = ip
+                        nextTryAt = 0L
+                        otaAsks = 0
+                        AddressAnnouncement.failures = 0
+                    }
+                    val due = Settings.announceIp &&
+                        SpeakerAddress.worthAnnouncing(ip, Settings.lastAnnouncedIp) &&
+                        now >= nextTryAt && AddressAnnouncement.failures < ADDRESS_MAX_TRIES &&
+                        !addressQuietHour() &&
+                        !info.dourok.voicebot.domain.voice.VoiceDebugState.awake &&
+                        !LocalMusicPlayer.isActive
+                    if (due) {
+                        // Is the speaker registered right now? (No OTA address: nothing to ask,
+                        // and no answer leaves what was known at start-up standing.)
+                        if (Settings.otaUrl.isNotBlank() && otaAsks < ADDRESS_MAX_OTA_ASKS) {
+                            otaAsks++
+                            ServerProvisioner.provision(deviceInfo)
+                        }
+                        if (ServerProvisioner.activationCode.isNotBlank()) {
+                            // Waiting for the owner to enter the activation code on the server.
+                            nextTryAt = now + ADDRESS_ACTIVATION_POLL_MS
+                        } else {
+                            nextTryAt = now + ADDRESS_RETRY_MS * (AddressAnnouncement.failures + 1)
+                            AddressAnnouncement.flow.tryEmit(ip)
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "address watch: ${e.message}")
+                }
+                Thread.sleep(ADDRESS_LOOK_MS)
+            }
+        } catch (e: InterruptedException) {
+            // the process is going away
+        }
+    }
+
+    /** Late evening and night by the owner's clock. A clock not yet set is never "night". */
+    private fun addressQuietHour(): Boolean {
+        val now = java.util.Calendar.getInstance(LocationManager.zone)
+        if (now.get(java.util.Calendar.YEAR) < 2024) return false
+        return SpeakerAddress.quietHour(now.get(java.util.Calendar.HOUR_OF_DAY))
     }
 
     override fun serve(session: IHTTPSession): Response = try {
@@ -282,6 +350,7 @@ class ControlServer @Inject constructor(
             "music_url" -> Settings.musicUrl = v
             "auto_update" -> Settings.autoUpdate = v == "true"
             "pause_on_music" -> Settings.pauseOnMusic = v == "true"
+            "announce_ip" -> Settings.announceIp = v == "true"
             "ha_url" -> Settings.haUrl = v
             "ha_token" -> Settings.haToken = v
             "ha_devices" -> Settings.haDevices = v
@@ -454,6 +523,7 @@ class ControlServer @Inject constructor(
         o.put("voice_awake", info.dourok.voicebot.domain.voice.VoiceDebugState.awake)
         o.put("voice_paused", info.dourok.voicebot.domain.voice.VoiceGate.paused)
         o.put("pause_on_music", Settings.pauseOnMusic)
+        o.put("announce_ip", Settings.announceIp)
         o.put("chat_bg", ChatBackground.stamp(context.filesDir))
         o.put("chat_bg_style", ChatBackground.style(context.filesDir))
         // The speaker is broadcasting its own Wi-Fi: the panel points at the card that ends that.
@@ -1132,6 +1202,15 @@ class ControlServer @Inject constructor(
         private const val FOREIGN_ORIGIN = """{"ok":false,"error":"Yêu cầu đến từ một trang web khác nên bị từ chối."}"""
         private const val PYTUBE_PORT = 114   // services/pytube_api.py binds this
         const val PORT = 8088
+        /** Address announcement (see watchAddress): first look after start-up, then how often. */
+        private const val ADDRESS_FIRST_LOOK_MS = 30_000L
+        private const val ADDRESS_LOOK_MS = 20_000L
+        /** Wait after an attempt the server did not answer; doubled, tripled... by VoiceAssistant's count. */
+        private const val ADDRESS_RETRY_MS = 120_000L
+        private const val ADDRESS_MAX_TRIES = 3
+        /** While the speaker waits to be activated on the server: how often to ask, and how many times. */
+        private const val ADDRESS_ACTIVATION_POLL_MS = 60_000L
+        private const val ADDRESS_MAX_OTA_ASKS = 40
         /** How long an effect chosen in the panel stays on the ring before the real state returns. */
         private const val LED_PREVIEW_MS = 6_000L
         /** Phrase that makes the server's get_news_bulletin tool fire. Shared with
