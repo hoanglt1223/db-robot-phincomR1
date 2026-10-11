@@ -3,6 +3,11 @@
 Mỗi bản một mục `## v<versionName>`. Khi phát hành, đoạn văn dưới mục đó được đưa vào trang Release
 và vào ô "Bản mới nhất" trong trang điều khiển của loa -- viết ngắn, cho người dùng đọc.
 
+## v1.5.9
+
+- Giao diện trên điện thoại: đầu trang xếp lại thành hai hàng (logo, tên và số phiên bản ở trên; trạng thái và nút đổi giao diện ở dưới).
+- Sửa các thẻ bị tràn ra ngoài khung trên màn hình hẹp: Âm thanh, Nguồn mic, Đèn LED, AI Model. Ô chọn tự xuống dòng riêng khi không đủ chỗ.
+
 ## v1.5.8
 
 - **Nền động cho khung Chat**: 6 nền hologram do trang tự vẽ (Lõi AI, Robot, Địa cầu, Sóng âm, Lưới neon, Mưa số), chuyển động theo lúc loa nghe và trả lời. Bấm nút hình ảnh ở đầu khung Chat để chọn.

@@ -90,6 +90,10 @@ body{background:var(--body-bg);color:var(--fg);
   box-shadow:0 4px 16px rgba(var(--ar),.3);}
 .head-text{flex:1;min-width:0;}
 .head-text h1{font-size:15px;font-weight:700;letter-spacing:-.1px;}
+.head-ver{display:inline-block;margin-left:4px;padding:1px 7px;border-radius:9px;vertical-align:1.5px;
+  font-size:10.5px;font-weight:700;letter-spacing:0;white-space:nowrap;background:var(--grad-dim);color:var(--a1);}
+.head-ver:empty{display:none;}
+[data-theme=light] .head .head-ver{background:rgba(255,255,255,.2);color:#fff;}
 .head-text .sub{font-size:11px;line-height:1.35;color:var(--mut);margin-top:2px;}
 .head-right{margin-left:auto;flex-shrink:0;display:flex;align-items:center;gap:8px;}
 /* theme toggle */
@@ -119,6 +123,16 @@ body{background:var(--body-bg);color:var(--fg);
 .btn-ico svg{width:14px;height:14px;}
 /* status */
 .status{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--mut);}
+/* Phone width: side by side, the name column was squeezed between the logo and "đang tắt nghe"
+   into five lines. Two rows instead -- who this is, then how it is: the status under the name
+   and the theme switch at the end of that row. */
+@media (max-width: 560px){
+  .head{flex-wrap:wrap;row-gap:2px;}
+  .head-text{flex:1 1 0;}
+  .head-right{flex:1 0 100%;margin-left:0;padding-left:48px;justify-content:space-between;}
+  .head-right .status{order:-1;font-size:12px;min-width:0;}
+  .head-right .thm-btn{margin-right:-10px;}
+}
 
 /* ── Voice orb ─────────────────────────────────────
    Ambient state indicator: 3 bars that read as a tiny waveform. Driven by data-state from the
@@ -281,7 +295,17 @@ body.fab-hide .fab{opacity:0;pointer-events:none;transform:translateY(12px);}
    rows above it. Widened to fit the longest label on one line; the controls beside it still have
    room at 360px. */
 .row label{flex:0 0 114px;color:var(--fg);font-size:13px;opacity:.75;}
-.row .val{flex:0 0 46px;text-align:right;font-weight:700;font-size:13px;
+/* A row's controls are flex items, and a flex item will not go below its content's width unless
+   told it may: a dropdown showing "VOICE_RECOGNITION (6)" or a slider (which has a built-in
+   minimum of its own) pushed the row out through the side of its card on a 360 px phone. */
+.row>*{min-width:0;}
+/* Rows with a dropdown: when what is left beside the label is too narrow to read an option in,
+   the dropdown moves to a line of its own, full width, instead of being cut short. `.ctl` keeps
+   a dropdown and its button(s) together when that happens. */
+.row.rw{flex-wrap:wrap;row-gap:7px;}
+.row.rw>select{flex:1 1 200px;}
+.row .ctl{display:flex;align-items:center;gap:10px;flex:1 1 230px;min-width:0;}
+.row .val{flex:0 0 auto;min-width:46px;text-align:right;font-weight:700;font-size:13px;
   font-variant-numeric:tabular-nums;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
 .hint{font-size:11px;color:var(--mut);line-height:1.5;padding:3px 0 1px;}
 /* Progressive disclosure for the long explanations: every card carried a 150-280 character wall of
@@ -313,7 +337,7 @@ body.fab-hide .fab{opacity:0;pointer-events:none;transform:translateY(12px);}
 #haSaved{max-height:236px;overflow:auto;overscroll-behavior:contain;margin-top:5px;}
 
 /* ── RANGE horizontal ───────────────────────────── */
-input[type=range]{-webkit-appearance:none;appearance:none;flex:1;height:4px;border-radius:4px;
+input[type=range]{-webkit-appearance:none;appearance:none;flex:1;min-width:0;height:4px;border-radius:4px;
   background:var(--line);outline:none;}
 input[type=range]::-webkit-slider-thumb{
   -webkit-appearance:none;width:17px;height:17px;border-radius:50%;
@@ -379,6 +403,7 @@ input[type=range]:active::-webkit-slider-thumb{box-shadow:0 0 0 5px rgba(var(--a
    padding-right reserves the gutter the native widget never had. */
 select{background-color:var(--bg);color:var(--fg);border:1px solid var(--line);
   border-radius:8px;padding:7px 32px 7px 10px;font-size:13px;outline:none;flex:1;
+  min-width:0;max-width:100%;text-overflow:ellipsis;
   -webkit-appearance:none;-moz-appearance:none;appearance:none;
   background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239aa0a6' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9.5l6 6 6-6'/%3E%3C/svg%3E");
   background-repeat:no-repeat;background-position:right 10px center;background-size:12px 12px;}
@@ -782,7 +807,7 @@ select:active,select:focus{box-shadow:0 0 0 4px var(--grad-dim);}
 <div class="head">
   <div class="logo brand" role="img" aria-label="DB-Robot"></div>
   <div class="head-text">
-    <h1>DB-Robot Phicomm R1</h1>
+    <h1>DB-Robot Phicomm R1 <span class="head-ver" id="headVer"></span></h1>
     <div class="sub" id="headSub">Bản dành riêng cho loa Harman Phicomm R1 - Trợ lý thông minh - OK Nabu</div>
   </div>
   <div class="head-right">
@@ -818,14 +843,14 @@ select:active,select:focus{box-shadow:0 0 0 4px var(--grad-dim);}
     </div>
     <div class="card" id="cardVoice" hidden>
       <div class="ch"><span class="icon-badge ib-voice"><svg viewBox="0 0 20 20" fill="currentColor"><rect x="2" y="7" width="2.2" height="6" rx="1.1"/><rect x="6.3" y="4" width="2.2" height="12" rx="1.1"/><rect x="10.6" y="1" width="2.2" height="18" rx="1.1"/><rect x="14.9" y="4" width="2.2" height="12" rx="1.1"/></svg></span><h2>Giọng đọc</h2></div>
-      <div class="row"><label>Giọng</label><select id="voice" style="flex:1"><option>(đang tải…)</option></select></div>
+      <div class="row rw"><label>Giọng</label><select id="voice"><option>(đang tải…)</option></select></div>
       <div class="hint">10 giọng VieNeu — nữ và nam, nhiều phong cách. Áp dụng từ câu trả lời kế tiếp.</div>
     </div>
     <div class="card" id="cardNews" hidden>
       <div class="ch"><span class="icon-badge ib-ai"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4" width="15" height="12" rx="1.5"/><line x1="6" y1="8" x2="14" y2="8"/><line x1="6" y1="11" x2="11" y2="11"/></svg></span><h2>Bản tin</h2><label class="sw"><input type="checkbox" id="newsOn" aria-label="Bật/tắt bản tin tự động"><span></span></label></div>
       <div class="row"><label>Giờ đọc</label><input type="time" class="codein ui" id="newsTime" style="flex:1"></div>
       <div id="newsCats"></div>
-      <div class="row"><label>Giọng đọc</label><select id="newsVoice" style="flex:1"><option>(đang tải…)</option></select></div>
+      <div class="row rw"><label>Giọng đọc</label><select id="newsVoice"><option>(đang tải…)</option></select></div>
       <div class="row" style="gap:8px"><button class="btn rec" style="flex:1;width:auto" onclick="saveNews()">Save</button><button class="btn rec" style="flex:1;width:auto" onclick="testNews()">Phát thử</button></div>
       <div class="hint" id="newsStat">Đúng giờ đã hẹn robot tự đọc bản tin theo các mục đã bật (kéo ⠿ để sắp xếp thứ tự).<details><summary>Chi tiết</summary><p>Thứ tự phát: nhạc hiệu đầu, các mục đã bật, nhạc hiệu cuối. Giọng đọc bản tin chọn riêng, không ảnh hưởng giọng trò chuyện. Nói "đọc bản tin" để nghe bất cứ lúc nào.</p></details></div>
     </div>
@@ -836,8 +861,8 @@ select:active,select:focus{box-shadow:0 0 0 4px var(--grad-dim);}
     </div>
     <div class="card">
       <div class="ch"><span class="icon-badge ib-mic"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="7.5" y="2" width="5" height="9" rx="2.5" fill="currentColor" stroke="none"/><path d="M4.5 9.5a5.5 5.5 0 0011 0"/><line x1="10" y1="15" x2="10" y2="18"/><line x1="7" y1="18" x2="13" y2="18"/></svg></span><h2>Nguồn mic</h2></div>
-      <div class="row"><label>Nguồn</label>
-        <select id="msrc" style="flex:1">
+      <div class="row rw"><label>Nguồn</label>
+        <select id="msrc">
           <option value="6">VOICE_RECOGNITION (6)</option>
           <option value="7">VOICE_COMMUNICATION (7)</option>
           <option value="1">MIC thô (1)</option>
@@ -863,13 +888,13 @@ select:active,select:focus{box-shadow:0 0 0 4px var(--grad-dim);}
     </div>
     <div class="card">
       <div class="ch"><span class="icon-badge ib-led"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2a5 5 0 00-3 9c.6.5 1 1.2 1 2h4c0-.8.4-1.5 1-2a5 5 0 00-3-9z"/><line x1="8.3" y1="16" x2="11.7" y2="16"/><line x1="8.6" y1="18" x2="11.4" y2="18"/></svg></span><h2>Đèn LED</h2></div>
-      <div class="row"><label class="wide"><span class="icon-mini ib-wake"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="4" cy="16" r="1.3" fill="currentColor" stroke="none"/><path d="M7 13a6 6 0 018 0"/><path d="M9.3 15.3a3 3 0 014 0"/></svg></span>Đang nghe</label><select id="ledSelL" style="flex:1" onchange="ledPick('L')" aria-label="Hiệu ứng đèn khi đang nghe"></select><button class="tbtn" onclick="ledApply('L')" aria-label="Xem thử đèn Đang nghe"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg></button></div>
+      <div class="row rw"><label class="wide"><span class="icon-mini ib-wake"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="4" cy="16" r="1.3" fill="currentColor" stroke="none"/><path d="M7 13a6 6 0 018 0"/><path d="M9.3 15.3a3 3 0 014 0"/></svg></span>Đang nghe</label><span class="ctl"><select id="ledSelL" style="flex:1" onchange="ledPick('L')" aria-label="Hiệu ứng đèn khi đang nghe"></select><button class="tbtn" onclick="ledApply('L')" aria-label="Xem thử đèn Đang nghe"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg></button></span></div>
       <div class="row led-custom" id="ledRowL" hidden><label class="wide">Mã tuỳ chỉnh</label><input class="codein" id="ledL" placeholder="ví dụ 505,309,503" onchange="ledApply('L')"></div>
-      <div class="row"><label class="wide"><span class="icon-mini ib-voice"><svg viewBox="0 0 20 20" fill="currentColor"><rect x="2" y="7" width="2.2" height="6" rx="1.1"/><rect x="6.3" y="4" width="2.2" height="12" rx="1.1"/><rect x="10.6" y="1" width="2.2" height="18" rx="1.1"/><rect x="14.9" y="4" width="2.2" height="12" rx="1.1"/></svg></span>Đang trả lời</label><select id="ledSelS" style="flex:1" onchange="ledPick('S')" aria-label="Hiệu ứng đèn khi đang trả lời"></select><button class="tbtn" onclick="ledApply('S')" aria-label="Xem thử đèn Đang trả lời"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg></button></div>
+      <div class="row rw"><label class="wide"><span class="icon-mini ib-voice"><svg viewBox="0 0 20 20" fill="currentColor"><rect x="2" y="7" width="2.2" height="6" rx="1.1"/><rect x="6.3" y="4" width="2.2" height="12" rx="1.1"/><rect x="10.6" y="1" width="2.2" height="18" rx="1.1"/><rect x="14.9" y="4" width="2.2" height="12" rx="1.1"/></svg></span>Đang trả lời</label><span class="ctl"><select id="ledSelS" style="flex:1" onchange="ledPick('S')" aria-label="Hiệu ứng đèn khi đang trả lời"></select><button class="tbtn" onclick="ledApply('S')" aria-label="Xem thử đèn Đang trả lời"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg></button></span></div>
       <div class="row led-custom" id="ledRowS" hidden><label class="wide">Mã tuỳ chỉnh</label><input class="codein" id="ledS" placeholder="ví dụ 505,309,503" onchange="ledApply('S')"></div>
-      <div class="row"><label class="wide"><span class="icon-mini ib-eq"><svg viewBox="0 0 20 20" fill="currentColor"><circle cx="5" cy="15" r="2.2"/><rect x="6.8" y="3" width="1.4" height="12" rx="0.7"/><path d="M8.2 3c2 .2 3.3 1.4 3.3 3.4" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round"/></svg></span>Phát nhạc</label><select id="ledSelM" style="flex:1" onchange="ledPick('M')" aria-label="Hiệu ứng đèn khi phát nhạc"></select><button class="tbtn" onclick="ledApply('M')" aria-label="Xem thử đèn Phát nhạc"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg></button></div>
+      <div class="row rw"><label class="wide"><span class="icon-mini ib-eq"><svg viewBox="0 0 20 20" fill="currentColor"><circle cx="5" cy="15" r="2.2"/><rect x="6.8" y="3" width="1.4" height="12" rx="0.7"/><path d="M8.2 3c2 .2 3.3 1.4 3.3 3.4" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round"/></svg></span>Phát nhạc</label><span class="ctl"><select id="ledSelM" style="flex:1" onchange="ledPick('M')" aria-label="Hiệu ứng đèn khi phát nhạc"></select><button class="tbtn" onclick="ledApply('M')" aria-label="Xem thử đèn Phát nhạc"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg></button></span></div>
       <div class="row led-custom" id="ledRowM" hidden><label class="wide">Mã tuỳ chỉnh</label><input class="codein" id="ledM" placeholder="ví dụ 505,309,503" onchange="ledApply('M')"></div>
-      <div class="row"><label class="wide"><span class="icon-mini ib-sys"><svg viewBox="0 0 20 20" fill="currentColor"><path d="M14 10.5A5.5 5.5 0 018.8 4 6 6 0 1014 10.5z"/></svg></span>Chờ</label><select id="ledSelI" style="flex:1" onchange="ledPick('I')" aria-label="Hiệu ứng đèn khi chờ"></select><button class="tbtn" onclick="ledApply('I')" aria-label="Xem thử đèn Chờ"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg></button></div>
+      <div class="row rw"><label class="wide"><span class="icon-mini ib-sys"><svg viewBox="0 0 20 20" fill="currentColor"><path d="M14 10.5A5.5 5.5 0 018.8 4 6 6 0 1014 10.5z"/></svg></span>Chờ</label><span class="ctl"><select id="ledSelI" style="flex:1" onchange="ledPick('I')" aria-label="Hiệu ứng đèn khi chờ"></select><button class="tbtn" onclick="ledApply('I')" aria-label="Xem thử đèn Chờ"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg></button></span></div>
       <div class="row led-custom" id="ledRowI" hidden><label class="wide">Mã tuỳ chỉnh</label><input class="codein" id="ledI" placeholder="ví dụ 505,309,503" onchange="ledApply('I')"></div>
       <div class="hint" id="ledHint">Chọn hiệu ứng đèn cho từng trạng thái của loa. Đèn đổi ngay để bạn xem thử, rồi tự trở lại sau vài giây.<details><summary>Chi tiết</summary><p>Mỗi dòng là một trạng thái: loa đang nghe bạn nói, đang trả lời, đang phát nhạc, hoặc đang chờ. Bấm nút ▶ để xem lại hiệu ứng đang chọn.</p><p><b>Tuỳ chỉnh (nhập mã)</b> dành cho người biết mã hiệu ứng của loa: nhập một mã, hoặc nhiều mã cách nhau bằng dấu phẩy để chạy nối tiếp.</p></details></div>
     </div>
@@ -933,7 +958,7 @@ select:active,select:focus{box-shadow:0 0 0 4px var(--grad-dim);}
       <div class="row" style="gap:8px"><button class="btn rec" style="flex:1;width:auto" id="wifiScanBtn" onclick="wifiScan()">Quét mạng</button><button class="btn rec" style="flex:1;width:auto" onclick="wifiOther()">Mạng ẩn…</button></div>
       <div class="wifi-form" id="wifiForm" hidden>
         <div class="row"><label>Mạng</label><input class="codein" id="wifiSsid" placeholder="Tên mạng (SSID)" maxlength="32" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
-        <div class="row" id="wifiSecRow"><label>Bảo mật</label><select id="wifiSec" style="flex:1" onchange="wifiSecChanged()"><option value="psk">WPA / WPA2</option><option value="wep">WEP</option><option value="open">Không mật khẩu</option></select></div>
+        <div class="row rw" id="wifiSecRow"><label>Bảo mật</label><select id="wifiSec" onchange="wifiSecChanged()"><option value="psk">WPA / WPA2</option><option value="wep">WEP</option><option value="open">Không mật khẩu</option></select></div>
         <div class="row" id="wifiPassRow"><label>Mật khẩu</label><input class="codein" id="wifiPass" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" onkeydown="if(event.key==='Enter')wifiConnect()"><button class="tbtn" onclick="wifiTogPass()" aria-label="Hiện/ẩn mật khẩu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.6"/></svg></button></div>
         <div class="row" style="gap:8px;margin-top:4px"><button class="btn rec" style="flex:1;width:auto" id="wifiGo" onclick="wifiConnect()">Kết nối</button><button class="btn rec" style="flex:1;width:auto" onclick="wifiCancel()">Huỷ</button></div>
       </div>
@@ -957,11 +982,11 @@ select:active,select:focus{box-shadow:0 0 0 4px var(--grad-dim);}
 
     <div class="card" id="cardLlm">
       <div class="ch"><span class="icon-badge ib-ai"><svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 2a4 4 0 00-4 4v1a3 3 0 000 6v1a4 4 0 008 0v-1a3 3 0 000-6V6a4 4 0 00-4-4z"/></svg></span><h2>AI Model</h2></div>
-      <div class="row"><label>Provider</label><select id="prov" onchange="onProv()"><option value="custom">Tuỳ chỉnh</option><option value="openai">OpenAI</option><option value="gemini">Google Gemini</option><option value="openrouter">OpenRouter</option><option value="deepseek">DeepSeek</option><option value="groq">Groq</option><option value="moonshot">Moonshot</option></select></div>
+      <div class="row rw"><label>Provider</label><select id="prov" onchange="onProv()"><option value="custom">Tuỳ chỉnh</option><option value="openai">OpenAI</option><option value="gemini">Google Gemini</option><option value="openrouter">OpenRouter</option><option value="deepseek">DeepSeek</option><option value="groq">Groq</option><option value="moonshot">Moonshot</option></select></div>
       <div class="row"><label>Base URL</label><input class="codein" id="burl" placeholder="https://.../v1"></div>
       <div class="row"><label>API Key</label><input class="codein" id="akey" type="password" placeholder="sk-…"><button class="tbtn" onclick="togKey()" aria-label="Hiện/ẩn API key"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.6"/></svg></button></div>
-      <div class="row" id="rowTrans" hidden><label>Transport</label><select id="ltrans"><option>openai</option><option>anthropic</option></select></div>
-      <div class="row"><label>Model</label><button class="tbtn" onclick="fetchModels()" aria-label="Tải danh sách model"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 11-2.3-5.6"/><path d="M20 3.5V9h-5.5"/></svg></button><select id="lmodel" style="flex:1"><option value="">(fetch or type)</option></select><button class="tbtn" onclick="togModelInput()" aria-label="Nhập tên model thủ công"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19.5 8.5a2.1 2.1 0 10-3-3L5 17v3z"/></svg></button></div>
+      <div class="row rw" id="rowTrans" hidden><label>Transport</label><select id="ltrans"><option>openai</option><option>anthropic</option></select></div>
+      <div class="row rw"><label>Model</label><span class="ctl"><button class="tbtn" onclick="fetchModels()" aria-label="Tải danh sách model"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 11-2.3-5.6"/><path d="M20 3.5V9h-5.5"/></svg></button><select id="lmodel" style="flex:1"><option value="">(fetch or type)</option></select><button class="tbtn" onclick="togModelInput()" aria-label="Nhập tên model thủ công"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19.5 8.5a2.1 2.1 0 10-3-3L5 17v3z"/></svg></button></span></div>
       <input class="codein" id="lmodelText" placeholder="model name" hidden style="margin-top:6px">
       <div class="row" style="gap:8px;margin-top:4px"><button class="btn rec" style="flex:1;width:auto" onclick="testLlm()">Test</button><button class="btn rec" style="flex:1;width:auto" onclick="saveLlm()">Save</button></div>
       <div class="hint" id="llmStat">Áp dụng từ lần gọi loa kế tiếp.</div>
@@ -2241,7 +2266,7 @@ const ABOUT_LINKS=[
     +'<small><span class="about-ver">DB-Robot Phicomm R1</span><br>Thiết kế và phát triển: DB_ROBOT — Copyright © 2026 - by @hoanganhsell. All rights reserved.</small></div>';
   document.querySelectorAll('#pset .settings,#psetup .settings,#mediaScroll').forEach(el=>el.insertAdjacentHTML('beforeend',html));
 })();
-function aboutVersion(v){if(!v)return;document.querySelectorAll('.about-ver').forEach(e=>{e.textContent='DB-Robot Phicomm R1 · v'+v;});}
+function aboutVersion(v){if(!v)return;$('headVer').textContent='v'+v;document.querySelectorAll('.about-ver').forEach(e=>{e.textContent='DB-Robot Phicomm R1 · v'+v;});}
 
 // ── Radio stations ───────────────────────────────
 // The list never changes while the page is open, so it is fetched once, the first time the Media
