@@ -78,20 +78,28 @@ class ControlServer @Inject constructor(
     }
 
     /**
-     * Has the speaker read its network address out when that address is not the one the owner was
-     * last told: a router that hands out a different one, or a move to another Wi-Fi, must not
-     * leave them unable to find this panel. See [SpeakerAddress] and
-     * [info.dourok.voicebot.domain.voice.VoiceAssistant], which does the talking.
+     * Has the speaker read its network address out when the owner needs to hear it: when the
+     * address is not the one they were last told (a router that hands out a different one, a move
+     * to another Wi-Fi), and when the speaker has just been activated on the server -- first set
+     * up, or deleted from the account and added again. Neither must leave them unable to find
+     * this panel. See [SpeakerAddress] and [info.dourok.voicebot.domain.voice.VoiceAssistant],
+     * which does the talking.
      *
-     * Not at night, not over a conversation or a song, and not before the speaker is registered
-     * with the server -- an unregistered speaker is answered with the activation prompt, not with
-     * what it asked to have said. The registration is asked about again just before each attempt,
-     * because the copy kept here dates from start-up.
+     * Whether the speaker is registered is only known from the last time the server was asked,
+     * so it is asked again after every voice session: a speaker removed from its account while it
+     * was running learns that when somebody talks to it and the server answers with an activation
+     * code. From then on the server is asked every few seconds, and the address is read out as
+     * soon as the code has been entered.
+     *
+     * Never at night, over a conversation or over a song.
      */
     private fun watchAddress() {
         var seen = ""
         var nextTryAt = 0L
-        var otaAsks = 0
+        var seenSessions = AddressAnnouncement.sessions
+        var nextOtaAt = 0L
+        var waitingForActivation = false
+        var activationAsks = 0
         try {
             Thread.sleep(ADDRESS_FIRST_LOOK_MS)
             while (true) {
@@ -101,26 +109,46 @@ class ControlServer @Inject constructor(
                     if (ip != seen) {
                         seen = ip
                         nextTryAt = 0L
-                        otaAsks = 0
                         AddressAnnouncement.failures = 0
                     }
-                    val due = Settings.announceIp &&
-                        SpeakerAddress.worthAnnouncing(ip, Settings.lastAnnouncedIp) &&
-                        now >= nextTryAt && AddressAnnouncement.failures < ADDRESS_MAX_TRIES &&
-                        !addressQuietHour() &&
-                        !info.dourok.voicebot.domain.voice.VoiceDebugState.awake &&
-                        !LocalMusicPlayer.isActive
-                    if (due) {
-                        // Is the speaker registered right now? (No OTA address: nothing to ask,
-                        // and no answer leaves what was known at start-up standing.)
-                        if (Settings.otaUrl.isNotBlank() && otaAsks < ADDRESS_MAX_OTA_ASKS) {
-                            otaAsks++
-                            ServerProvisioner.provision(deviceInfo)
+                    val canAsk = Settings.otaUrl.isNotBlank() && SpeakerAddress.isAddress(ip)
+
+                    // Somebody has talked to the speaker since the last look: is it still registered?
+                    val sessions = AddressAnnouncement.sessions
+                    if (sessions != seenSessions && canAsk && now >= nextOtaAt) {
+                        seenSessions = sessions
+                        activationAsks = 0
+                        nextOtaAt = now + ADDRESS_OTA_GAP_MS
+                        ServerProvisioner.provision(deviceInfo, quiet = true)
+                    }
+
+                    if (ServerProvisioner.activationCode.isNotBlank()) {
+                        // Not registered: wait for the owner to enter the code, asking as we go.
+                        if (!waitingForActivation) {
+                            waitingForActivation = true
+                            AppLog.w("Loa chưa được kích hoạt trên máy chủ, mã: ${ServerProvisioner.activationCode} -> chờ nhập mã")
                         }
-                        if (ServerProvisioner.activationCode.isNotBlank()) {
-                            // Waiting for the owner to enter the activation code on the server.
-                            nextTryAt = now + ADDRESS_ACTIVATION_POLL_MS
-                        } else {
+                        if (canAsk && now >= nextOtaAt && activationAsks < ADDRESS_MAX_ACTIVATION_ASKS) {
+                            activationAsks++
+                            val answered = ServerProvisioner.provision(deviceInfo, quiet = true).ok
+                            nextOtaAt = now + (if (answered) ADDRESS_ACTIVATION_POLL_MS else ADDRESS_RETRY_MS)
+                        }
+                    } else {
+                        if (waitingForActivation) {
+                            // Activated a moment ago: tell the owner the address, changed or not.
+                            waitingForActivation = false
+                            Settings.lastAnnouncedIp = ""
+                            nextTryAt = 0L
+                            AddressAnnouncement.failures = 0
+                            AppLog.i("Loa vừa được kích hoạt trên máy chủ -> sẽ đọc địa chỉ IP")
+                        }
+                        val due = Settings.announceIp &&
+                            SpeakerAddress.worthAnnouncing(ip, Settings.lastAnnouncedIp) &&
+                            now >= nextTryAt && AddressAnnouncement.failures < ADDRESS_MAX_TRIES &&
+                            !addressQuietHour() &&
+                            !info.dourok.voicebot.domain.voice.VoiceDebugState.awake &&
+                            !LocalMusicPlayer.isActive
+                        if (due) {
                             nextTryAt = now + ADDRESS_RETRY_MS * (AddressAnnouncement.failures + 1)
                             AddressAnnouncement.flow.tryEmit(ip)
                         }
@@ -1204,13 +1232,16 @@ class ControlServer @Inject constructor(
         const val PORT = 8088
         /** Address announcement (see watchAddress): first look after start-up, then how often. */
         private const val ADDRESS_FIRST_LOOK_MS = 30_000L
-        private const val ADDRESS_LOOK_MS = 20_000L
+        private const val ADDRESS_LOOK_MS = 10_000L
         /** Wait after an attempt the server did not answer; doubled, tripled... by VoiceAssistant's count. */
         private const val ADDRESS_RETRY_MS = 120_000L
         private const val ADDRESS_MAX_TRIES = 3
-        /** While the speaker waits to be activated on the server: how often to ask, and how many times. */
-        private const val ADDRESS_ACTIVATION_POLL_MS = 60_000L
-        private const val ADDRESS_MAX_OTA_ASKS = 40
+        /** Asking the server about the registration: at most this often after voice sessions... */
+        private const val ADDRESS_OTA_GAP_MS = 20_000L
+        /** ...and, while waiting for the activation code to be entered, this often, this many times
+         *  (half an hour; talking to the speaker again starts the count afresh). */
+        private const val ADDRESS_ACTIVATION_POLL_MS = 10_000L
+        private const val ADDRESS_MAX_ACTIVATION_ASKS = 180
         /** How long an effect chosen in the panel stays on the ring before the real state returns. */
         private const val LED_PREVIEW_MS = 6_000L
         /** Phrase that makes the server's get_news_bulletin tool fire. Shared with

@@ -326,11 +326,15 @@ Loa không có TTS trên máy: mọi câu nói đều do máy chủ đọc. Nên
 qua trợ lý:
 - **Hỏi thì trả lời**: công cụ MCP `self.network.get_ip_address` (`mcp/DeviceTools.kt`) trả JSON có
   trường `speak` đã viết sẵn thành lời. `self.get_device_status` cũng có `network.ip`.
-- **Tự đọc khi địa chỉ đổi**: `ControlServer.watchAddress()` (luồng `address-watch`, 20 giây một
-  lần) so địa chỉ hiện tại với `Settings.lastAnnouncedIp`; khác thì hỏi lại OTA xem loa đã kích hoạt
-  chưa (bản lưu trong `ServerProvisioner` chỉ có từ lúc khởi động), rồi bắn
-  `AddressAnnouncement.flow`. `VoiceAssistant.announceAddress()` gửi một text query nhờ trợ lý đọc
-  nguyên văn. Thất bại thì **không chuông** và lùi dần (2, 4, 6 phút, tối đa 3 lần cho mỗi địa chỉ).
+- **Tự đọc khi địa chỉ đổi**: `ControlServer.watchAddress()` (luồng `address-watch`, 10 giây một
+  lần) so địa chỉ hiện tại với `Settings.lastAnnouncedIp`; khác thì bắn `AddressAnnouncement.flow`.
+  `VoiceAssistant.announceAddress()` gửi một text query nhờ trợ lý đọc nguyên văn.
+- **Tự đọc sau khi kích hoạt lại** (v1.5.11; bản 1.5.10 thiếu, đo trên loa thật: xoá thiết bị, nhập
+  mã mới, loa im vì IP không đổi và app không khởi động lại). Trạng thái kích hoạt trong
+  `ServerProvisioner` chỉ mới bằng lần hỏi OTA gần nhất, nên luồng trên hỏi lại OTA **sau mỗi phiên
+  nói chuyện** (`AddressAnnouncement.sessions`, tăng trong setter của `isAwake`): loa bị xoá khỏi
+  tài khoản chỉ biết điều đó khi có người nói với nó. Thấy mã kích hoạt → hỏi OTA 10 giây một lần
+  (`quiet = true` để khỏi ngập Log) → hết mã thì xoá `lastAnnouncedIp` và đọc địa chỉ. Thất bại thì **không chuông** và lùi dần (2, 4, 6 phút, tối đa 3 lần cho mỗi địa chỉ).
   Không đọc khi đang nói chuyện, đang phát nhạc, 22h–7h, hay ở chế độ cài đặt mạng (`192.168.43.1`).
 - **Địa chỉ luôn được viết thành chữ trước khi rời loa** (`SpeakerAddress.spoken`: "một chín hai,
   chấm, một sáu tám…"). Đưa "192.168.1.22" cho TTS thì mỗi engine đọc một kiểu.

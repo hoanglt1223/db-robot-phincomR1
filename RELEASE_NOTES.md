@@ -3,6 +3,11 @@
 Mỗi bản một mục `## v<versionName>`. Khi phát hành, đoạn văn dưới mục đó được đưa vào trang Release
 và vào ô "Bản mới nhất" trong trang điều khiển của loa -- viết ngắn, cho người dùng đọc.
 
+## v1.5.11
+
+- Loa tự đọc địa chỉ IP ngay sau khi được kích hoạt lại trên máy chủ (xoá thiết bị rồi thêm lại), kể cả khi địa chỉ không đổi. Bản trước chỉ đọc khi địa chỉ thay đổi.
+- Mã kích hoạt trên trang điều khiển tự cập nhật, không cần khởi động lại ứng dụng.
+
 ## v1.5.10
 
 - **Hỏi loa địa chỉ IP**: nói "địa chỉ IP của bạn là gì?" — loa đọc từng số của địa chỉ và cách mở trang điều khiển.

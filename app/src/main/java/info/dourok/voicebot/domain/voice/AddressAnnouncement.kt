@@ -20,4 +20,12 @@ object AddressAnnouncement {
      * gives up after a few: an address nobody can be told about is not worth a chime every minute.
      */
     @Volatile var failures: Int = 0
+
+    /**
+     * Counts the voice sessions started since the app came up. ControlServer asks the server
+     * whether the speaker is still registered after each one: a speaker deleted from its account
+     * finds out when somebody talks to it (the server answers with an activation code), and that
+     * is the moment to start waiting for the code to be entered.
+     */
+    @Volatile var sessions: Int = 0
 }

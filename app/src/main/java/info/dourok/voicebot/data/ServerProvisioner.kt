@@ -48,12 +48,16 @@ object ServerProvisioner {
      *   the WebSocket url from the OTA host. Wanted when somebody presses Connect in the panel
      *   (they need *something* to try); not wanted for the automatic check at start-up, where a
      *   guess would overwrite a url that was working before the network blinked.
+     * @param quiet leave the activity log alone unless the server's address changed. For a caller
+     *   that asks again every few seconds (ControlServer.watchAddress, waiting for an activation
+     *   code to be entered) and would otherwise fill the log with one line repeated.
      */
     @Synchronized
     fun provision(
         deviceInfo: DeviceInfo,
         otaUrl: String = Settings.otaUrl,
         deriveOnFailure: Boolean = false,
+        quiet: Boolean = false,
     ): Outcome {
         val ota = otaUrl.trim()
         if (ota.isBlank()) return Outcome(false, Settings.wsUrl, "", "no ota url")
@@ -96,7 +100,7 @@ object ServerProvisioner {
             if (wsUrl != Settings.wsUrl) AppLog.i("Server: $wsUrl (từ OTA)")
             Settings.wsUrl = wsUrl
             Settings.wsToken = ws?.optString("token", "").orEmpty()
-            if (activationCode.isNotBlank()) AppLog.w("Thiết bị chưa kích hoạt, mã: $activationCode")
+            if (activationCode.isNotBlank() && !quiet) AppLog.w("Thiết bị chưa kích hoạt, mã: $activationCode")
             return Outcome(true, wsUrl, "ota", "")
         }
 
@@ -108,7 +112,7 @@ object ServerProvisioner {
             AppLog.w("OTA không trả lời ($error), tự suy ra server: $derived")
             return Outcome(true, derived, "derived", error)
         }
-        AppLog.w("Kiểm tra OTA thất bại: $error")
+        if (!quiet) AppLog.w("Kiểm tra OTA thất bại: $error")
         return Outcome(false, Settings.wsUrl, "", error)
     }
 

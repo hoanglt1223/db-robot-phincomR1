@@ -39,7 +39,11 @@ class VoiceAssistant @Inject constructor(
     val emotion = MutableStateFlow("neutral")
 
     @Volatile private var isAwake = false
-        set(v) { field = v; VoiceDebugState.awake = v }
+        set(v) {
+            if (v && !field) AddressAnnouncement.sessions++
+            field = v
+            VoiceDebugState.awake = v
+        }
     @Volatile private var isMusic = false   // server báo play_youtube đang phát -> LED nhạc
     private var aborted = false
     private var encoder: OpusEncoder? = null
