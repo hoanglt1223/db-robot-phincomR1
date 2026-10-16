@@ -731,6 +731,11 @@ select::-ms-expand{display:none;}
 .yt-sub{font-size:11px;color:var(--mut);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .yt-bar .mp-btn{width:36px;height:36px;flex-shrink:0;text-decoration:none;}
 .yt-bar .mp-btn svg{width:16px;height:16px;}
+.yt-bar .yt-spk{background:var(--grad);color:#fff;border-color:transparent;}
+.yt-bar .yt-spk:disabled{opacity:.35;}
+.li-play-wrap.yt{display:flex;gap:6px;width:auto;}
+.li-play.ghost{background:var(--card2);color:var(--fg);border:1px solid var(--line);box-shadow:none;}
+.yt-err.info{color:var(--mut);}
 .yt-err{margin-top:8px;font-size:11.5px;color:var(--err);line-height:1.45;}
 .yt-err[hidden]{display:none;}
 .yt-err a{color:var(--a1);font-weight:600;}
@@ -1143,10 +1148,11 @@ select:active,select:focus{box-shadow:0 0 0 4px var(--grad-dim);}
     <div id="ytCard" class="mp yt-card" hidden>
       <div class="yt-stage">
         <iframe id="ytFrame" title="Trình phát YouTube" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin" hidden></iframe>
-        <div class="yt-idle" id="ytIdle"><svg viewBox="0 0 28 20"><rect width="28" height="20" rx="5" fill="#ff0033"/><path d="M11 5.5v9l7.5-4.5z" fill="#fff"/></svg><b>YouTube Music</b><span>Tìm bài hát bên dưới rồi chạm để phát. Video phát trên chính thiết bị đang mở trang này, không phát ra loa.</span></div>
+        <div class="yt-idle" id="ytIdle"><svg viewBox="0 0 28 20"><rect width="28" height="20" rx="5" fill="#ff0033"/><path d="M11 5.5v9l7.5-4.5z" fill="#fff"/></svg><b>YouTube Music</b><span>Tìm bài hát bên dưới. Nút loa: phát ra loa (qua máy chủ nhạc). Nút ▶: xem ngay trên thiết bị này.</span></div>
       </div>
       <div class="yt-bar">
         <div class="yt-info"><div class="yt-title" id="ytTitle">Chưa chọn video</div><div class="yt-sub" id="ytSub">Phát trên thiết bị này</div></div>
+        <button class="mp-btn yt-spk" id="ytSpk" onclick="ytToSpeaker(ytIndex)" aria-label="Phát trên loa" title="Phát trên loa" disabled><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 9.5v5h3.5L12 19V5L7.5 9.5H4z"/><path d="M15 9.2a4 4 0 010 5.6M17.6 6.8a7.5 7.5 0 010 10.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
         <button class="mp-btn" id="ytPrev" onclick="ytStep(-1)" aria-label="Video trước" disabled><svg viewBox="0 0 24 24" fill="currentColor"><path d="M18 6l-8.5 6L18 18V6zM8 6v12H6V6h2z"/></svg></button>
         <button class="mp-btn" id="ytNext" onclick="ytStep(1)" aria-label="Video kế" disabled><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg></button>
         <a class="mp-btn" id="ytOpen" href="https://www.youtube.com/" target="_blank" rel="noopener" aria-label="Mở trên YouTube" title="Mở trên YouTube"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 01-1 1H5a1 1 0 01-1-1V7a1 1 0 011-1h5"/></svg></a>
@@ -2420,7 +2426,7 @@ async function ytSearch(q){
 function ytRender(err){
   if(mediaView!=='yt')return;
   const el=$('mediaResults');
-  let h=listHead('','YouTube Music','Phát trên thiết bị đang mở trang này — không phát ra loa.');
+  let h=listHead('','YouTube Music','Nút loa: phát ra loa · Nút ▶: xem trên thiết bị này');
   if(err)h+=`<div class="media-empty">${SVG_WARN}<span>${escq(err)}</span><a class="guide-link" href="https://www.youtube.com/results?search_query=${encodeURIComponent($('mediaSearch').value.trim())}" target="_blank" rel="noopener" style="margin-top:4px"><span><b>Mở trên YouTube</b></span></a></div>`;
   else if(!ytList.length)h+=`<div class="media-empty">${SVG_NOTE}<span>Nhập tên bài hát rồi bấm Tìm.<br>Hoặc dán link video YouTube.</span></div>`;
   h+=ytList.map((v,i)=>`
@@ -2430,7 +2436,7 @@ function ytRender(err){
         <div class="li-title">${escq(v.title)}</div>
         <div class="li-sub">${v.live?'<span class="li-badge">LIVE</span>':''}${escq(v.channel)}${v.duration?(' · '+escq(v.duration)):''}</div>
       </div>
-      <div class="li-play-wrap yt"><button class="li-play" onclick="ytTap(${i})" aria-label="Phát">${ytCur&&ytCur.id===v.id&&ytPlaying?SVG_PAUSE:SVG_PLAY}</button></div>
+      <div class="li-play-wrap yt"><button class="li-play" onclick="ytToSpeaker(${i})" aria-label="Phát trên loa" title="Phát trên loa">${SVG_SPK}</button><button class="li-play ghost" onclick="ytTap(${i})" aria-label="Xem trên thiết bị này" title="Xem trên thiết bị này">${ytCur&&ytCur.id===v.id&&ytPlaying?SVG_PAUSE:SVG_PLAY}</button></div>
     </div>`).join('');
   el.innerHTML=h;
 }
@@ -2441,6 +2447,33 @@ function ytTap(i){
   }
   ytPlayAt(i);
 }
+const SVG_SPK='<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 9.5v5h3.5L12 19V5L7.5 9.5H4z"/><path d="M15 9.2a4 4 0 010 5.6M17.6 6.8a7.5 7.5 0 010 10.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
+// Play on the speaker: the music server fetches the video's audio (yt-dlp) and serves it as MP3, so
+// it plays like any song from the music server. The rest of the results go in as the queue, from
+// the tapped one on, so "next" carries on down the list.
+let ytSpkBusy=false;
+async function ytToSpeaker(i){
+  const v=ytList[i];if(!v||ytSpkBusy)return;
+  ytSpkBusy=true;
+  if(ytPlayer&&ytPlaying){try{ytPlayer.pauseVideo();}catch(e){}}
+  clearTimeout(ytErrTimer);
+  $('ytErr').className='yt-err info';$('ytErr').textContent='Đang chuẩn bị “'+(v.title||'video')+'” trên loa…';$('ytErr').hidden=false;
+  try{
+    const j=await(await fetch('/api/yt/prepare?id='+encodeURIComponent(v.id))).json();
+    if(!j.ok)throw new Error(j.error||'Không phát được trên loa.');
+    const from=i,list=ytList.slice(from,from+MEDIA_QUEUE_MAX);
+    const items=list.map((x,k)=>({
+      video_id:k===0?j.video_id:'/stream_mp3?id=yt_'+x.id,
+      title:(k===0&&j.title)||x.title||'',artist:(k===0&&j.artist)||x.channel||'YouTube',
+      thumbnail:x.thumbnail||'',duration:x.duration||''}));
+    await fetch('/api/media/play',{method:'POST',body:JSON.stringify({items:items,start_index:0})});
+    $('ytErr').hidden=true;
+    setMediaView('music');
+    try{$('pmedia').scrollTop=0;}catch(e){}   // show the speaker's player, now playing it
+  }catch(e){
+    $('ytErr').className='yt-err';$('ytErr').textContent=e.message;$('ytErr').hidden=false;
+  }finally{ytSpkBusy=false;}
+}
 function ytStep(d){if(ytList.length)ytPlayAt(Math.max(0,Math.min(ytList.length-1,ytIndex+d)));}
 function ytPlayAt(i){
   const v=ytList[i];if(!v)return;
@@ -2450,7 +2483,7 @@ function ytPlayAt(i){
   $('ytTitle').textContent=v.title||'YouTube';
   $('ytSub').textContent=(v.channel?v.channel+' · ':'')+'phát trên thiết bị này';
   $('ytOpen').href='https://www.youtube.com/watch?v='+encodeURIComponent(v.id);
-  $('ytPrev').disabled=i<=0;$('ytNext').disabled=i>=ytList.length-1;
+  $('ytPrev').disabled=i<=0;$('ytNext').disabled=i>=ytList.length-1;$('ytSpk').disabled=false;
   if(ytPlayer&&ytPlayer.loadVideoById){try{ytPlayer.loadVideoById(v.id);ytRender();ytNowRender();return;}catch(e){ytPlayer=null;}}
   // Our own iframe, so that it carries a referrer (YouTube refuses embeds without one, and this
   // page sets no-referrer for chat backgrounds); the IFrame API then attaches to it for events.
@@ -2483,6 +2516,7 @@ function ytState(e){
 function ytError(e){
   const code=e&&e.data;
   const blocked=code===101||code===150||code===153;
+  $('ytErr').className='yt-err';
   $('ytErr').innerHTML=(blocked?'Chủ video không cho phát nhúng ngoài YouTube.':code===100?'Video đã bị gỡ hoặc để riêng tư.':'Không phát được video này.')
     +` <a href="https://www.youtube.com/watch?v=${encodeURIComponent(ytCur?ytCur.id:'')}" target="_blank" rel="noopener">Mở trên YouTube</a>`
     +(ytIndex<ytList.length-1?' · tự chuyển video kế…':'');
@@ -3152,7 +3186,7 @@ function renderNowPlaying(s){
   $('npDur').textContent=dur>0?fmtClock(dur):(sessionActive?'LIVE':'--:--');
   if(st==='playing')vizPollLoop();
 }
-function mediaSource(id){id=String(id||'');return id.indexOf('radio:')===0?'Radio':id.indexOf('pod:')===0?'Podcast':'DB-Robot Music';}
+function mediaSource(id){id=String(id||'');return id.indexOf('radio:')===0?'Radio':id.indexOf('pod:')===0?'Podcast':id.indexOf('id=yt_')>=0?'YouTube':'DB-Robot Music';}
 const MP_LABEL={playing:'Tạm dừng',paused:'Tiếp tục',downloading:'Đang tải…',stopped:'Phát lại',error:'Thử lại'};
 const MP_META={playing:'Đang phát luồng 128k MP3…',paused:'Đang tạm dừng',stopped:'Đã dừng'};
 

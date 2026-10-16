@@ -3,6 +3,11 @@
 Mỗi bản một mục `## v<versionName>`. Khi phát hành, đoạn văn dưới mục đó được đưa vào trang Release
 và vào ô "Bản mới nhất" trong trang điều khiển của loa -- viết ngắn, cho người dùng đọc.
 
+## v1.5.13
+
+- **Phát YouTube ra loa**: mỗi kết quả YouTube có thêm nút loa — chạm là loa phát bài đó (các kết quả sau thành danh sách phát tiếp), như nhạc từ máy chủ nhạc. Nút ▶ vẫn xem video ngay trên điện thoại. Cần máy chủ nhạc DB-Robot bản mới (có YouTube).
+- **Podcast tin tức trong nước**: bỏ "Thời sự RFI", thêm **Thời sự VOV**, **VnExpress Hôm nay** và **Podcast VietNamNet**.
+
 ## v1.5.12
 
 - **YouTube Music trong tab Media**: tìm bài hát, video trên YouTube hoặc dán link video, rồi xem và nghe ngay trên trang điều khiển. Không cần máy chủ nhạc. Video phát trên điện thoại hoặc máy tính đang mở trang, không phát ra loa.

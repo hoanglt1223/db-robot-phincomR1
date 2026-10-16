@@ -273,6 +273,9 @@ class ControlServer @Inject constructor(
             // YouTube in the panel: the search runs here (a web page cannot ask YouTube itself),
             // the video plays in YouTube's embedded player on the phone -- see YouTubeSearch.
             "/api/yt/search" -> json(info.dourok.voicebot.media.YouTubeSearch.searchJson(param(session, "q")))
+            // ...and to play one ON THE SPEAKER, the music server fetches its audio (yt-dlp) and
+            // serves it as MP3 at /stream_mp3?id=yt_<id>; this asks it to get that ready.
+            "/api/yt/prepare" -> json(handleYoutubePrepare(param(session, "id")))
             // Podcasts: the built-in list, Apple's directory for search, a show's episodes, and
             // the relay the on-device player reads an episode through (see Podcasts).
             "/api/podcast/shows" -> json(buildPodcastShows())
@@ -636,6 +639,42 @@ class ControlServer @Inject constructor(
         } catch (e: Exception) {
             AppLog.w("Không tìm được nhạc: ${e.message}")
             """{"ok":false,"error":${JSONObject.quote(e.message ?: "network error")}}"""
+        }
+    }
+
+    /**
+     * GET {musicBase()}/youtube?id= : the music server checks that the video's audio can be had
+     * and fetches its stream address, so that playing "/stream_mp3?id=yt_<id>" starts at once.
+     * A music server without the route answers 404 -- said so in words the owner can act on.
+     */
+    private fun handleYoutubePrepare(id: String): String {
+        if (!info.dourok.voicebot.media.YouTubeSearch.validId(id)) return """{"ok":false,"error":"Mã video không hợp lệ."}"""
+        if (!localMusic()) return """{"ok":false,"error":"Chưa cài máy chủ nhạc (tab System → Máy chủ nhạc)."}"""
+        return try {
+            val req = Request.Builder().url("${musicBase()}/youtube?id=$id").get().build()
+            musicHttp.newCall(req).execute().use { resp ->
+                val body = resp.body?.string().orEmpty()
+                val j = try { JSONObject(body) } catch (e: Exception) { null }
+                when {
+                    resp.code == 404 && j == null ->
+                        """{"ok":false,"error":"Máy chủ nhạc chưa hỗ trợ YouTube — cần cập nhật máy chủ nhạc."}"""
+                    j != null && j.optBoolean("success", false) -> JSONObject()
+                        .put("ok", true)
+                        .put("video_id", j.optString("audio_url", "/stream_mp3?id=yt_$id"))
+                        .put("title", j.optString("title", ""))
+                        .put("artist", j.optString("artist", ""))
+                        .put("thumbnail", j.optString("thumbnail", ""))
+                        .put("duration_s", j.optInt("duration", 0))
+                        .toString()
+                    else -> {
+                        val why = j?.optString("error", "").orEmpty().ifBlank { "HTTP ${resp.code}" }
+                        AppLog.w("YouTube ra loa: máy chủ nhạc báo lỗi ($why)")
+                        """{"ok":false,"error":${JSONObject.quote("Máy chủ nhạc không lấy được âm thanh: $why")}}"""
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            """{"ok":false,"error":${JSONObject.quote("Không nối được máy chủ nhạc (${e.message ?: "lỗi mạng"}).")}}"""
         }
     }
 

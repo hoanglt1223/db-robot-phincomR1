@@ -30,7 +30,7 @@ màn hình.
 - **Ra lệnh bằng giọng nói** — "mở bài Nơi này có anh", "tăng âm lượng lên 70", "mở VOV giao
   thông Hà Nội", "dừng nhạc" (xem [Lệnh giọng nói](#lệnh-giọng-nói)).
 - **Radio** — 8 kênh VOV, mở bằng giọng nói hoặc bấm trong tab Media.
-- **Podcast** — 13 chương trình podcast miễn phí bằng tiếng Việt và tiếng Anh, chạm là loa phát
+- **Podcast** — 15 chương trình podcast miễn phí bằng tiếng Việt và tiếng Anh, chạm là loa phát
   tập mới nhất; tìm thêm podcast khác ngay trong tab Media.
 - **YouTube Music** — tìm và xem video, nghe nhạc YouTube ngay trên trang điều khiển, không cần
   máy chủ nhạc (phát trên điện thoại / máy tính đang mở trang, không phát ra loa).
@@ -272,6 +272,7 @@ chủ nhạc** trong tab System có ô nhập cho máy chủ riêng. Máy chủ 
 |---|---|
 | `GET /stream_pcm?song=<tên bài>` | JSON `{"success":true,"title":…,"artist":…,"thumbnail":…,"audio_url":"/stream_mp3?id=…"}` |
 | `GET <audio_url>` | Luồng MP3 của bài hát |
+| `GET /youtube?id=<mã video>` | (để phát YouTube ra loa) JSON như trên, `audio_url` = `/stream_mp3?id=yt_<mã>` |
 
 Loa tự giải mã và phát MP3, nên nhạc không đi qua đường thoại của trợ lý.
 
@@ -279,10 +280,16 @@ Loa tự giải mã và phát MP3, nên nhạc không đi qua đường thoại 
 
 Hai hàng mới trong tab Media, ngay trên và dưới hàng Radio:
 
-- **YouTube** — bấm **YouTube Music**: trình phát nhúng của YouTube thế chỗ trình phát của loa, ô
-  tìm kiếm chuyển sang tìm trên YouTube (dán link video cũng được). Chạm một kết quả để phát; hết
-  video thì tự sang video kế. Video phát **trên điện thoại hoặc máy tính đang mở trang**, không phát
-  ra loa và không cần máy chủ nhạc. Loa chỉ làm hộ việc tìm kiếm (trình duyệt không được phép tự
+- **YouTube** — bấm **YouTube Music**: ô tìm kiếm chuyển sang tìm trên YouTube (dán link video cũng
+  được). Mỗi kết quả có hai nút:
+  - **Nút loa — phát ra loa.** Máy chủ nhạc lấy âm thanh của video, đổi sang MP3 rồi loa phát như
+    một bài hát thường; các kết quả phía sau thành danh sách phát tiếp. Cần máy chủ nhạc DB-Robot
+    bản có `/youtube` (xem [Máy chủ nhạc](#máy-chủ-nhạc)). Trên máy chủ DB-Robot, máy chủ nhạc
+    công khai chỉ là cầu nối: nó chuyển yêu cầu qua mạng Docker nội bộ tới một máy chủ YouTube
+    riêng không mở ra Internet (biến `YT_BACKEND`), và tự lấy bằng yt-dlp khi máy chủ đó không trả lời.
+  - **Nút ▶ — xem trên thiết bị này.** Trình phát nhúng của YouTube thế chỗ trình phát của loa;
+    hết video thì tự sang video kế. Phát **trên điện thoại hoặc máy tính đang mở trang**, không cần
+    máy chủ nhạc. Loa chỉ làm hộ việc tìm kiếm (trình duyệt không được phép tự
   hỏi YouTube), xem `media/YouTubeSearch.java`. Một số video bị chủ kênh chặn phát nhúng; khi đó
   trang báo lỗi, có nút mở trên YouTube và tự chuyển sang video kế. Bấm **Về nhạc trên loa** để quay
   lại; video đang phát vẫn tiếp tục.
@@ -294,7 +301,7 @@ Hai hàng mới trong tab Media, ngay trên và dưới hàng Radio:
   có hỗ trợ tua (`media/Podcasts.java`, `/podcast/stream`).
 
 Chương trình có sẵn: Tri Kỷ Cảm Xúc, Have A Sip, Giang ơi Radio, Đọc truyện đêm khuya (Đài Hà
-Nội), Chương trình 60' (RFI Tiếng Việt), 5 Phút Chuyện Thị Trường, Spiderum, HIEU.TV, Better
+Nội), Thời sự VOV, VnExpress Hôm nay, Podcast VietNamNet, 5 Phút Chuyện Thị Trường, Spiderum, HIEU.TV, Better
 Version, Minh Niệm, Vì sao thế nhỉ!, Kho truyện cổ tích, 6 Minute English (BBC).
 
 ## Cập nhật phần mềm
