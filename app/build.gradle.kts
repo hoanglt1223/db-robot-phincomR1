@@ -11,6 +11,12 @@ android {
     namespace = "info.dourok.voicebot"
     compileSdk = 35
 
+    // The alarm tone is played straight from the APK (AssetManager.openFd), which only works on an
+    // asset stored uncompressed.
+    androidResources {
+        noCompress += "wav"
+    }
+
     defaultConfig {
         // DB-Robot's own id, so it installs beside (not over) both the stock aiboxplus app and an
         // upstream xiaozhi-android build. `namespace` above stays as it is: the Opus JNI symbols
@@ -21,8 +27,8 @@ android {
         // One number per release, said in both places and by the git tag. Left at 1 / "1.0" for
         // months, which is how a fix measured on one build gets reported as still broken on
         // another -- nothing on the device could say which binary was running.
-        versionCode = 22
-        versionName = "1.5.13"
+        versionCode = 23
+        versionName = "1.5.14"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 

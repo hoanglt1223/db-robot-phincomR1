@@ -143,6 +143,15 @@ object Settings {
         get() = prefs.getString("loc_tz", AppConfig.TIME_ZONE)!!
         set(v) = prefs.edit().putString("loc_tz", v).apply()
 
+    /** The owner's alarms, as AlarmBook JSON (alarm/AlarmBook.java). */
+    var alarmsJson: String
+        get() = prefs.getString("alarms", "[]")!!
+        set(v) = prefs.edit().putString("alarms", v).apply()
+    /** Speaker volume (0..100) while an alarm rings; the owner's own is put back afterwards. */
+    var alarmVolume: Int
+        get() = prefs.getInt("alarm_volume", 70)
+        set(v) = prefs.edit().putInt("alarm_volume", v.coerceIn(10, 100)).apply()
+
     /** Read the speaker's network address out when it has changed (see net/SpeakerAddress). */
     var announceIp: Boolean
         get() = prefs.getBoolean("announce_ip", true)

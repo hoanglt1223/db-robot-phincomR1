@@ -501,6 +501,43 @@ select::-ms-expand{display:none;}
 #updStat.ok{color:var(--ok);}
 
 /* ── WI-FI CARD ─────────────────────────────────── */
+.ib-alarm{background:linear-gradient(135deg,#f97316,#fb7185);}
+.al-add{border:1px solid rgba(var(--ar),.25);background:var(--grad-dim);color:var(--a1);border-radius:16px;padding:6px 12px;
+  font:700 12px/1 inherit;cursor:pointer;}
+.al-item{border-bottom:1px solid var(--line);}
+.al-item:last-child{border-bottom:0;}
+.al-head{display:flex;align-items:center;gap:12px;padding:10px 0;cursor:pointer;}
+.al-time{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:.5px;min-width:84px;}
+.al-item.off .al-time,.al-item.off .al-sum{opacity:.45;}
+.al-sum{flex:1;min-width:0;font-size:12px;color:var(--mut);line-height:1.45;}
+.al-sum b{display:block;color:var(--fg);font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.al-edit{padding:4px 0 12px;display:flex;flex-direction:column;gap:9px;}
+.al-edit[hidden]{display:none;}
+.al-edit input[type=time]{font:700 22px/1.2 inherit;padding:6px 10px;border-radius:10px;border:1px solid var(--line);
+  background:var(--card2);color:var(--fg);width:150px;}
+.al-days{display:flex;flex-wrap:wrap;gap:6px;}
+.al-days button{min-width:40px;height:34px;border-radius:17px;border:1px solid var(--line);background:var(--card2);color:var(--fg);
+  font:600 12px/1 inherit;cursor:pointer;}
+.al-days button.on{background:var(--grad);color:#fff;border-color:transparent;}
+.al-edit select,.al-edit .codein{width:100%;min-width:0;}
+.al-btns{display:flex;flex-wrap:wrap;gap:8px;}
+.al-btns .btn{flex:1 1 90px;width:auto;padding:10px;}
+.al-next{color:var(--a1);font-weight:600;}
+.al-sounds{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 4px;}
+.al-snd{display:inline-flex;align-items:center;gap:2px;max-width:100%;border:1px solid var(--line);background:var(--card2);
+  border-radius:16px;padding:2px 4px 2px 10px;font-size:12px;}
+.al-snd span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;}
+.al-snd button{border:0;background:none;color:var(--mut);width:26px;height:26px;cursor:pointer;font-size:13px;flex-shrink:0;}
+.al-ring{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:4px 0 8px;padding:10px 12px;border-radius:12px;
+  background:rgba(249,115,22,.14);border:1px solid rgba(249,115,22,.4);font-size:13px;}
+.al-ring[hidden],.alarm-bar[hidden]{display:none;}
+.al-ring button,.alarm-bar button{border:0;border-radius:16px;padding:8px 14px;background:linear-gradient(135deg,#f97316,#ef4444);color:#fff;
+  font:700 12.5px/1 inherit;cursor:pointer;flex-shrink:0;}
+.alarm-bar{position:fixed;left:50%;top:10px;transform:translateX(-50%);z-index:60;display:flex;align-items:center;gap:12px;
+  width:min(520px,calc(100% - 24px));padding:10px 12px 10px 14px;border-radius:14px;background:var(--card);
+  border:1px solid rgba(249,115,22,.55);box-shadow:0 10px 30px rgba(0,0,0,.35);font-size:13px;animation:al-pulse 1.4s ease-in-out infinite;}
+.alarm-bar span{flex:1;min-width:0;}
+@keyframes al-pulse{50%{box-shadow:0 10px 30px rgba(249,115,22,.45);}}
 .ib-wifi{background:linear-gradient(135deg,#10b981,#34d399);}
 .wifi-now{display:flex;align-items:center;gap:10px;padding:9px 11px;margin-bottom:9px;border-radius:10px;
   background:var(--card2);border:1px solid var(--line);}
@@ -759,6 +796,11 @@ select::-ms-expand{display:none;}
   color:var(--fg);font:600 12px/1 inherit;cursor:pointer;}
 .list-item.pod-show{cursor:pointer;}
 
+/* Podcast chips wrap inside the card instead of running off its edge. */
+#podRow{align-items:flex-start;}
+#podRow .radio-lbl{padding-top:7px;}
+#podRow .radio-chips{flex-wrap:wrap;overflow:visible;}
+
 /* Search / empty states in the list area */
 .media-empty{margin:28px auto;color:var(--mut);text-align:center;font-size:13px;line-height:1.8;
   display:flex;flex-direction:column;align-items:center;gap:8px;}
@@ -1010,6 +1052,18 @@ select:active,select:focus{box-shadow:0 0 0 4px var(--grad-dim);}
       <div class="hint">Nhập tên thành phố nơi đặt loa, bấm tìm rồi chọn trong danh sách. Loa dùng vị trí này để trả lời đúng giờ địa phương và thời tiết khi bạn hỏi. <button class="loc-clear" id="locClearBtn" onclick="locClear()" hidden>Xoá vị trí</button><details><summary>Chi tiết</summary><p>Chưa chọn thành phố thì loa dùng múi giờ Việt Nam và chưa có thông tin thời tiết.</p><p>Khi bạn hỏi "mấy giờ rồi" hoặc "thời tiết hôm nay thế nào", trợ lý lấy câu trả lời từ loa. Hỏi thời tiết của một thành phố khác cũng được. Cần máy chủ hỗ trợ công cụ trên thiết bị (MCP).</p><p>Dữ liệu thời tiết lấy từ Open-Meteo, cập nhật 10 phút một lần.</p></details></div>
     </div>
 
+    <div class="card" id="cardAlarm">
+      <div class="ch"><span class="icon-badge ib-alarm"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="11" r="6.2"/><path d="M10 7.8V11l2.2 1.6M3.2 4.6l2.4-2M16.8 4.6l-2.4-2"/></svg></span><h2>Báo thức</h2><span style="flex:1"></span><button class="al-add" id="alarmAddBtn" onclick="alarmAdd()">+ Thêm</button></div>
+      <div class="al-ring" id="alarmRingBox" hidden><span>⏰ Đang báo thức <b id="alarmRingText"></b></span><button onclick="alarmStop()">Tắt</button></div>
+      <div id="alarmList"><div class="hint">Đang tải…</div></div>
+      <div class="hint al-next" id="alarmNext"></div>
+      <div class="row"><label>Âm lượng báo</label><input type="range" id="alarmVol" min="10" max="100" step="5" aria-label="Âm lượng khi báo thức"><span class="val" id="alarmVolV">–</span></div>
+      <div class="row rw"><label>Âm thanh</label><span class="ctl"><button class="btn rec" style="width:auto;flex:1;padding:10px" onclick="$('alarmFile').click()">Tải âm thanh lên…</button></span><input type="file" id="alarmFile" accept="audio/*,.mp3,.m4a,.aac,.ogg,.wav,.flac" hidden onchange="alarmUpload(this)"></div>
+      <div class="al-sounds" id="alarmSounds"></div>
+      <div class="hint" id="alarmStat"></div>
+      <div class="hint">Loa phát tiếng báo thức tới khi bạn bấm nút trên đỉnh loa (hoặc nút Tắt ở đây), tự tắt sau 10 phút. Nhạc đang phát tạm dừng rồi phát tiếp. Báo thức không chọn ngày nào chỉ báo một lần rồi tự tắt. <details><summary>Chi tiết</summary><p>Âm thanh tự chọn: MP3, M4A, AAC, OGG, WAV hoặc FLAC, tối đa 15 MB, lưu trên loa (tối đa 10 tệp). Giờ báo theo múi giờ trong thẻ Vị trí &amp; thời tiết.</p><p>Trong lúc báo thức, loa không nghe từ đánh thức để tiếng chuông không gọi nhầm trợ lý.</p></details></div>
+    </div>
+
     <div class="card" id="cardWifi">
       <div class="ch"><span class="icon-badge ib-wifi"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M2.5 8a11 11 0 0115 0"/><path d="M5.2 10.9a7 7 0 019.6 0"/><path d="M7.8 13.7a3.3 3.3 0 014.4 0"/><circle cx="10" cy="16.3" r="1.1" fill="currentColor" stroke="none"/></svg></span><h2>Wi-Fi</h2></div>
       <div class="wifi-now" id="wifiNow"><div class="li-info"><div class="li-title">Đang đọc…</div></div></div>
@@ -1184,6 +1238,7 @@ select:active,select:focus{box-shadow:0 0 0 4px var(--grad-dim);}
 </div>
 </div><!--panes-->
 
+<div class="alarm-bar" id="alarmBar" hidden><span>⏰ Đang báo thức <b id="alarmBarText"></b></span><button onclick="alarmStop()">Tắt báo thức</button></div>
 <!-- Floating buttons live INSIDE .app so they track the panel frame, not the viewport. -->
 <button id="pauseFab" class="fab left" aria-label="Tắt hoặc bật lại việc nghe từ đánh thức"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="7.5" y="2.5" width="5" height="9" rx="2.5"/><path d="M4.5 9.5a5.5 5.5 0 0011 0M10 15v2.5"/><path d="M3 3l14 14" id="pauseSlash"/></svg><span id="pauseFabText">Tắt nghe</span></button>
 <button id="wakeFab" class="fab left" aria-label="Gọi loa: bắt đầu nghe ngay"><svg viewBox="0 0 20 20" fill="currentColor"><rect x="7.5" y="2" width="5" height="9.5" rx="2.5"/><path d="M4.5 9.5a5.5 5.5 0 0011 0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M10 15v2.5M7 17.5h6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>Gọi loa</button>
@@ -1235,6 +1290,7 @@ function restart(){if(confirm('Restart app?'))fetch('/api/restart',{method:'POST
 function tab(t){['set','setup','media'].forEach(x=>{$('p'+x).classList.toggle('on',x===t);$('t'+x).classList.toggle('on',x===t);});
   try{localStorage.setItem('r1-tab',t);}catch(e){}
   if(t==='media'){mediaPollStart();radioLoad();podLoad();}else mediaPollStop();
+  if(t==='setup')alarmLoad();
   // Bluetooth state is polled only while its tab is on screen, for the reason media state is: a
   // scan's results change every second and nobody needs them when the card is not being looked at.
   if(t==='setup'){btPollStart();wifiPollStart();}else{btPollStop();wifiPollStop();}
@@ -1585,6 +1641,7 @@ function updateVoiceOrb(s){
   $('vorb').dataset.state=vstate==='paused'?'offline':vstate;
   voiceRender(s);chatBgRender(s);aboutVersion(s.app_version);
   if(document.activeElement!==$('sayIp'))$('sayIp').checked=s.announce_ip!==false;
+  if((s.alarm_ringing||'')!==($('alarmBarText').textContent||'')||(!!s.alarm_ringing)!==alarmWasRinging)alarmRingRender(s.alarm_ringing||'');
   if(s.device_id)lastDeviceId=s.device_id;
   $('apBanner').hidden=!s.wifi_hotspot;
   if(s.wifi_hotspot&&!apJumped){apJumped=true;apOpen();}   // opened on the speaker's hotspot: go to the card that ends it
@@ -2368,6 +2425,144 @@ async function radioPlay(id){
 function radioMark(videoId,state){
   const on=(videoId&&String(videoId).indexOf('radio:')===0&&(state==='playing'||state==='downloading'))?String(videoId).slice(6):'';
   document.querySelectorAll('#radioChips .radio-chip').forEach(c=>c.classList.toggle('on',c.dataset.id===on));}
+
+// ── Alarms (System tab) ──────────────────────────
+// The list lives on the speaker; the panel edits a copy and saves the whole list back.
+let alarmData=null,alarmEdit=-1,alarmDraft=null;
+const AL_DAYS=['T2','T3','T4','T5','T6','T7','CN'];
+function alarmDaysText(d){
+  d=(d||[]).slice().sort();const k=d.join(',');
+  if(!d.length)return'Một lần';if(k==='0,1,2,3,4,5,6')return'Hằng ngày';if(k==='0,1,2,3,4')return'T2–T6';if(k==='5,6')return'T7, CN';
+  return d.map(i=>AL_DAYS[i]).join(', ');
+}
+function alarmSoundName(s){return !s||s==='default'?'Tiếng mặc định':s;}
+async function alarmLoad(){
+  try{const j=await(await fetch('/api/alarm/state')).json();if(j.ok){alarmData=j;alarmRender();}}catch(e){}
+}
+function alarmRender(){
+  const d=alarmData;if(!d)return;
+  const list=d.alarms||[];
+  $('alarmList').innerHTML=list.length?list.map((a,i)=>`
+    <div class="al-item${a.enabled?'':' off'}">
+      <div class="al-head" onclick="alarmOpen(${i})">
+        <span class="al-time">${escq(a.time)}</span>
+        <span class="al-sum"><b>${escq(a.label||'Báo thức')}</b>${escq(alarmDaysText(a.days))} · ${escq(alarmSoundName(a.sound))}</span>
+        <label class="sw sw-sm" onclick="event.stopPropagation()"><input type="checkbox" ${a.enabled?'checked':''} onchange="alarmToggle(${i},this.checked)" aria-label="Bật báo thức ${escq(a.time)}"><span></span></label>
+      </div>
+      ${i===alarmEdit?alarmEditor():''}
+    </div>`).join('')+(alarmEdit===list.length?`<div class="al-item">${alarmEditor()}</div>`:'')
+    :(alarmEdit===0?`<div class="al-item">${alarmEditor()}</div>`:'<div class="hint">Chưa có báo thức nào. Bấm “+ Thêm”.</div>');
+  $('alarmAddBtn').disabled=list.length>=(d.max_alarms||12);
+  $('alarmNext').textContent=d.next?('Lần báo tiếp: '+d.next.text):(d.clock_ok===false?'Đồng hồ loa chưa đúng giờ — báo thức sẽ được hẹn khi loa lấy được giờ.':'');
+  if(document.activeElement!==$('alarmVol')){$('alarmVol').value=d.volume;$('alarmVolV').textContent=d.volume+'%';}
+  $('alarmSounds').innerHTML=`<span class="al-snd"><span>Tiếng mặc định</span><button onclick="alarmTest('default')" title="Thử trên loa" aria-label="Thử tiếng mặc định">▶</button></span>`
+    +(d.sounds||[]).map(n=>`<span class="al-snd"><span title="${escq(n)}">${escq(n)}</span><button onclick="alarmTest('${escq(n)}')" title="Thử trên loa" aria-label="Thử">▶</button><button onclick="alarmDelSound('${escq(n)}')" title="Xoá tệp" aria-label="Xoá">✕</button></span>`).join('');
+  alarmRingRender(d.ringing&&!d.ringing.test?(d.ringing.time+(d.ringing.label?' · '+d.ringing.label:'')):'');
+}
+function alarmEditor(){
+  const a=alarmDraft;if(!a)return'';
+  const sounds=['default'].concat((alarmData&&alarmData.sounds)||[]);
+  if(a.sound&&sounds.indexOf(a.sound)<0)sounds.push(a.sound);
+  return `<div class="al-edit">
+    <input type="time" id="alTime" value="${escq(a.time)}" onchange="alarmDraft.time=this.value" aria-label="Giờ báo">
+    <div class="al-days">${AL_DAYS.map((t,i)=>`<button type="button" class="${a.days.indexOf(i)>=0?'on':''}" onclick="alarmDay(${i},this)" aria-pressed="${a.days.indexOf(i)>=0}">${t}</button>`).join('')}</div>
+    <select id="alSound" onchange="alarmDraft.sound=this.value" aria-label="Âm thanh">${sounds.map(n=>`<option value="${escq(n)}"${n===a.sound?' selected':''}>${escq(alarmSoundName(n))}</option>`).join('')}</select>
+    <input class="codein ui" id="alLabel" maxlength="40" placeholder="Ghi chú (ví dụ: Dậy đi học)" value="${escq(a.label||'')}" oninput="alarmDraft.label=this.value">
+    <div class="al-btns"><button class="btn go" onclick="alarmSaveDraft()">Lưu</button><button class="btn rec" onclick="alarmTest(alarmDraft.sound)">Thử</button>${a._new?'':'<button class="btn warn" onclick="alarmDelete()">Xoá</button>'}<button class="btn rec" onclick="alarmClose()">Huỷ</button></div>
+  </div>`;
+}
+function alarmOpen(i){
+  if(alarmEdit===i){alarmClose();return;}
+  const a=alarmData.alarms[i];alarmEdit=i;
+  alarmDraft={id:a.id,enabled:true,time:a.time,days:(a.days||[]).slice(),sound:a.sound||'default',label:a.label||''};
+  alarmRender();
+}
+function alarmAdd(){
+  if(!alarmData)return;
+  alarmEdit=alarmData.alarms.length;
+  alarmDraft={id:'a'+Date.now(),enabled:true,time:'06:30',days:[0,1,2,3,4],sound:'default',label:'',_new:true};
+  alarmRender();
+  setTimeout(()=>{const t=$('alTime');if(t)t.focus();},50);
+}
+function alarmClose(){alarmEdit=-1;alarmDraft=null;alarmRender();}
+function alarmDay(i,b){
+  const k=alarmDraft.days.indexOf(i);
+  if(k>=0)alarmDraft.days.splice(k,1);else alarmDraft.days.push(i);
+  b.classList.toggle('on',k<0);b.setAttribute('aria-pressed',k<0);
+}
+async function alarmSave(list,msg){
+  $('alarmStat').textContent='Đang lưu…';
+  try{
+    const r=await fetch('/api/alarm/save',{method:'POST',body:JSON.stringify({alarms:list.map(a=>({id:a.id,enabled:a.enabled,time:a.time,days:a.days,sound:a.sound,label:a.label})),volume:+$('alarmVol').value})});
+    const j=await r.json();
+    if(!j.ok)throw new Error(j.error||'Không lưu được.');
+    alarmData=j;alarmEdit=-1;alarmDraft=null;alarmRender();
+    $('alarmStat').textContent=msg||'Đã lưu.';
+  }catch(e){$('alarmStat').textContent='✗ '+e.message;}
+}
+function alarmSaveDraft(){
+  const a=alarmDraft;if(!a)return;
+  a.time=($('alTime')&&$('alTime').value)||a.time;
+  if(!/^\d{2}:\d{2}$/.test(a.time)){$('alarmStat').textContent='✗ Chọn giờ báo.';return;}
+  const list=alarmData.alarms.slice();
+  const item={id:a.id,enabled:true,time:a.time,days:a.days.slice().sort(),sound:a.sound,label:(a.label||'').trim()};
+  if(a._new)list.push(item);else list[alarmEdit]=item;
+  alarmSave(list,'Đã lưu báo thức '+a.time+'.');
+}
+function alarmToggle(i,on){
+  const list=alarmData.alarms.map((a,k)=>k===i?Object.assign({},a,{enabled:on}):a);
+  alarmSave(list,on?'Đã bật báo thức '+list[i].time+'.':'Đã tắt báo thức '+list[i].time+'.');
+}
+function alarmDelete(){
+  if(alarmEdit<0||!confirmLite('Xoá báo thức '+alarmData.alarms[alarmEdit].time+'?'))return;
+  const list=alarmData.alarms.filter((a,k)=>k!==alarmEdit);
+  alarmSave(list,'Đã xoá báo thức.');
+}
+// a plain confirm() would block the page's pollers on some phones; a second tap confirms instead
+let alarmConfirmAt=0;
+function confirmLite(text){
+  if(Date.now()-alarmConfirmAt<4000){alarmConfirmAt=0;return true;}
+  alarmConfirmAt=Date.now();$('alarmStat').textContent=text+' Bấm Xoá lần nữa để xác nhận.';return false;
+}
+let alarmVolTimer=null;
+$('alarmVol').oninput=e=>{
+  $('alarmVolV').textContent=e.target.value+'%';
+  clearTimeout(alarmVolTimer);
+  alarmVolTimer=setTimeout(()=>{if(alarmData)alarmSave(alarmData.alarms,'Đã đặt âm lượng báo thức '+e.target.value+'%.');},600);
+};
+async function alarmTest(sound){
+  try{await fetch('/api/alarm/test?sound='+encodeURIComponent(sound||'default'),{method:'POST'});
+    $('alarmStat').textContent='Loa đang phát thử “'+alarmSoundName(sound)+'” trong 12 giây.';}catch(e){}
+}
+async function alarmStop(){
+  try{await fetch('/api/alarm/stop',{method:'POST'});}catch(e){}
+  alarmRingRender('');
+}
+async function alarmUpload(input){
+  const f=input.files&&input.files[0];input.value='';
+  if(!f)return;
+  const max=((alarmData&&alarmData.max_sound_mb)||15)*1024*1024;
+  if(f.size>max){$('alarmStat').textContent='✗ Tệp quá lớn (tối đa '+(max/1048576)+' MB).';return;}
+  $('alarmStat').textContent='Đang tải “'+f.name+'” lên loa…';
+  try{
+    const j=await(await fetch('/api/alarm/sound/put?name='+encodeURIComponent(f.name),{method:'PUT',body:f})).json();
+    if(!j.ok)throw new Error(j.error||'Không tải lên được.');
+    alarmData=j;alarmRender();$('alarmStat').textContent='Đã tải lên. Chọn tệp này trong một báo thức để dùng.';
+  }catch(e){$('alarmStat').textContent='✗ '+e.message;}
+}
+async function alarmDelSound(n){
+  if(!confirmLite('Xoá tệp “'+n+'”?'))return;
+  try{const j=await(await fetch('/api/alarm/sound/delete?name='+encodeURIComponent(n),{method:'POST'})).json();
+    if(j.ok){alarmData=j;alarmRender();$('alarmStat').textContent='Đã xoá tệp. Báo thức nào đang dùng nó sẽ báo bằng tiếng mặc định.';}}catch(e){}
+}
+// Ringing, from /api/state on every tab: a bar at the top with the way to switch it off.
+let alarmWasRinging=false;
+function alarmRingRender(text){
+  $('alarmBar').hidden=!text;$('alarmBarText').textContent=text||'';
+  $('alarmRingBox').hidden=!text;$('alarmRingText').textContent=text||'';
+  if(alarmWasRinging&&!text)alarmLoad();   // a once-only alarm switched itself off
+  alarmWasRinging=!!text;
+}
 
 // ── Media views ──────────────────────────────────
 // The list under the search box shows one of three things, and the search box searches the same:

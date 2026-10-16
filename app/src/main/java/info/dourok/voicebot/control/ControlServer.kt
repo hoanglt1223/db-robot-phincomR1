@@ -75,6 +75,8 @@ class ControlServer @Inject constructor(
             Log.e(TAG, "start failed: ${e.message}")
         }
         Thread({ watchAddress() }, "address-watch").apply { isDaemon = true }.start()
+        // An update replaces the package, and with it every alarm AlarmManager held for it.
+        try { info.dourok.voicebot.alarm.AlarmScheduler.reschedule(context) } catch (e: Exception) { }
     }
 
     /**
@@ -269,6 +271,36 @@ class ControlServer @Inject constructor(
             "/api/chat/bg/clear" -> json(ChatBackground.clear(context.filesDir))
             // Internet radio: the station list for the panel, play by key, and the relay the
             // on-device player reads the stream through (see MusicService.radioTrack).
+            // Alarms (tab System → Báo thức): the list and the next ring, saving it, the sounds the
+            // owner uploads, a short test, and switching off one that rings. See alarm/*.
+            "/api/alarm/state" -> json(buildAlarmState())
+            "/api/alarm/save" -> json(if (sameOrigin(session)) handleAlarmSave(bodyOf(session)) else FOREIGN_ORIGIN)
+            "/api/alarm/stop" -> {
+                info.dourok.voicebot.alarm.AlarmRinger.stop("tắt từ trang điều khiển")
+                json("""{"ok":true}""")
+            }
+            "/api/alarm/test" -> {
+                val sound = param(session, "sound").ifBlank { info.dourok.voicebot.alarm.AlarmBook.DEFAULT_SOUND }
+                info.dourok.voicebot.alarm.AlarmRinger.start(context, sound, "", "", testSeconds = 12)
+                json("""{"ok":true}""")
+            }
+            "/api/alarm/sound/put" -> json(
+                if (!sameOrigin(session)) FOREIGN_ORIGIN
+                else alarmResult(
+                    info.dourok.voicebot.alarm.AlarmBook.saveSound(
+                        context.filesDir,
+                        uploadOf(session, info.dourok.voicebot.alarm.AlarmBook.MAX_SOUND_BYTES),
+                        param(session, "name"),
+                    )
+                )
+            )
+            "/api/alarm/sound/delete" -> json(
+                if (!sameOrigin(session)) FOREIGN_ORIGIN
+                else {
+                    info.dourok.voicebot.alarm.AlarmBook.deleteSound(context.filesDir, param(session, "name"))
+                    buildAlarmState()
+                }
+            )
             "/api/radio/stations" -> json(buildRadioStations())
             // YouTube in the panel: the search runs here (a web page cannot ask YouTube itself),
             // the video plays in YouTube's embedded player on the phone -- see YouTubeSearch.
@@ -568,6 +600,10 @@ class ControlServer @Inject constructor(
         o.put("voice_paused", info.dourok.voicebot.domain.voice.VoiceGate.paused)
         o.put("pause_on_music", Settings.pauseOnMusic)
         o.put("announce_ip", Settings.announceIp)
+        // An alarm ringing: the panel shows a "Tắt báo thức" bar wherever the owner is.
+        o.put("alarm_ringing", info.dourok.voicebot.alarm.AlarmRinger.ringing?.let { r ->
+            if (r.test) "" else (r.time + if (r.label.isNotEmpty()) " · ${r.label}" else "").ifBlank { "báo thức" }
+        } ?: "")
         o.put("chat_bg", ChatBackground.stamp(context.filesDir))
         o.put("chat_bg_style", ChatBackground.style(context.filesDir))
         // The speaker is broadcasting its own Wi-Fi: the panel points at the card that ends that.
@@ -1164,6 +1200,45 @@ class ControlServer @Inject constructor(
         }
         return JSONObject().put("ok", true).put("stations", arr).toString()
     }
+
+    private fun buildAlarmState(): String {
+        val list = info.dourok.voicebot.alarm.AlarmScheduler.alarms()
+        val sounds = JSONArray()
+        info.dourok.voicebot.alarm.AlarmBook.sounds(context.filesDir).forEach { sounds.put(it) }
+        val o = JSONObject()
+            .put("ok", true)
+            .put("alarms", info.dourok.voicebot.alarm.AlarmBook.toJsonArray(list))
+            .put("sounds", sounds)
+            .put("volume", Settings.alarmVolume)
+            .put("max_alarms", info.dourok.voicebot.alarm.AlarmBook.MAX_ALARMS)
+            .put("max_sound_mb", info.dourok.voicebot.alarm.AlarmBook.MAX_SOUND_BYTES / (1024 * 1024))
+            .put("clock_ok", info.dourok.voicebot.news.NewsSchedule.clockIsTrustworthy(System.currentTimeMillis()))
+        info.dourok.voicebot.alarm.AlarmScheduler.next()?.let { (a, at) ->
+            o.put("next", JSONObject().put("id", a.id).put("at", at)
+                .put("text", info.dourok.voicebot.alarm.AlarmBook.whenText(at, java.util.TimeZone.getDefault())))
+        }
+        info.dourok.voicebot.alarm.AlarmRinger.ringing?.let { r ->
+            o.put("ringing", JSONObject().put("time", r.time).put("label", r.label).put("test", r.test))
+        }
+        return o.toString()
+    }
+
+    /** Body: {"alarms":[{id,enabled,time:"HH:mm",days:[0..6],sound,label}],"volume":N}. */
+    private fun handleAlarmSave(body: String): String {
+        val root = try { JSONObject(body) } catch (e: Exception) {
+            return """{"ok":false,"error":"Dữ liệu báo thức không đọc được."}"""
+        }
+        val err = arrayOfNulls<String>(1)
+        val list = info.dourok.voicebot.alarm.AlarmBook.validate(root.optJSONArray("alarms"), err)
+            ?: return """{"ok":false,"error":${JSONObject.quote(err[0] ?: "Báo thức không hợp lệ.")}}"""
+        if (root.has("volume")) Settings.alarmVolume = root.optInt("volume", Settings.alarmVolume)
+        info.dourok.voicebot.alarm.AlarmScheduler.save(context, list)
+        return buildAlarmState()
+    }
+
+    private fun alarmResult(error: String): String =
+        if (error.isEmpty()) buildAlarmState()
+        else """{"ok":false,"error":${JSONObject.quote(error)}}"""
 
     private fun buildPodcastShows(): String {
         val arr = JSONArray()

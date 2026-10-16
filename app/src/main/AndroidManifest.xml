@@ -67,6 +67,12 @@
             android:name=".news.NewsAlarmReceiver"
             android:enabled="true"
             android:exported="false" />
+
+        <!-- The owner's alarms (System tab → Báo thức). See alarm/AlarmScheduler. -->
+        <receiver
+            android:name=".alarm.AlarmReceiver"
+            android:enabled="true"
+            android:exported="false" />
     </application>
 
 </manifest>

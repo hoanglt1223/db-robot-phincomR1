@@ -3,6 +3,11 @@
 Mỗi bản một mục `## v<versionName>`. Khi phát hành, đoạn văn dưới mục đó được đưa vào trang Release
 và vào ô "Bản mới nhất" trong trang điều khiển của loa -- viết ngắn, cho người dùng đọc.
 
+## v1.5.14
+
+- **Báo thức** (tab System): đặt nhiều báo thức, chọn ngày lặp lại (hoặc báo một lần), âm lượng báo, tiếng mặc định hoặc tệp âm thanh tự tải lên (MP3, M4A, OGG, WAV…). Bấm nút trên đỉnh loa hoặc nút "Tắt báo thức" trên trang điều khiển để tắt; tự tắt sau 10 phút.
+- Hàng Podcast xuống dòng gọn trong khung, không còn bị cắt; Thời sự VOV, VnExpress, VietNamNet lên đầu.
+
 ## v1.5.13
 
 - **Máy chủ nhạc DB-Robot chuyển sang nguồn YouTube**: lệnh "mở bài …", ô tìm nhạc và YouTube Music cùng lấy nhạc từ YouTube.

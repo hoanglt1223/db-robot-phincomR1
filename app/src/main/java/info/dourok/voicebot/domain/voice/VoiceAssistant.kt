@@ -329,7 +329,10 @@ class VoiceAssistant @Inject constructor(
                         // While the owner has the wake word switched off (VoiceGate) the detector
                         // is still fed, and only its verdict is thrown away: a streaming detector
                         // left unfed comes back cold and can misfire on its first frames.
-                        if (VoiceGate.wakeWordAllowed && !(Settings.pauseOnMusic && isMusic)) {
+                        // Not while an alarm rings: its own sound must not start a conversation.
+                        if (info.dourok.voicebot.alarm.AlarmRinger.isRinging) {
+                            wakeWord.reset()
+                        } else if (VoiceGate.wakeWordAllowed && !(Settings.pauseOnMusic && isMusic)) {
                             onWake()
                         } else {
                             AppLog.i("Nghe thấy từ khóa nhưng đang tắt nghe -> bỏ qua")
@@ -575,6 +578,11 @@ class VoiceAssistant @Inject constructor(
     fun onButtonPress() {
         Log.i(TAG, "onButtonPress: isAwake=$isAwake state=${state.value} t=${System.currentTimeMillis()}")
         scope.launch {
+            // An alarm ringing: the button is how it is switched off, and that is all it does.
+            if (info.dourok.voicebot.alarm.AlarmRinger.isRinging) {
+                info.dourok.voicebot.alarm.AlarmRinger.stop("nút bấm")
+                return@launch
+            }
             autoTurns = 0  // explicit user intent -> reset the false-wake blast-radius cap
             if (!isAwake && LocalMusicPlayer.isActive) {
                 // The button stays the reliable "turn it off": with a song playing and no session

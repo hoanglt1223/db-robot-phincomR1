@@ -23,6 +23,7 @@ class BootReceiver : BroadcastReceiver() {
             try {
                 Settings.init(context)
                 NewsAlarmScheduler.reschedule(context)
+                info.dourok.voicebot.alarm.AlarmScheduler.reschedule(context)
             } catch (e: Exception) {
                 Log.e("BootReceiver", "News alarm reschedule after time change failed", e)
             }
@@ -45,6 +46,7 @@ class BootReceiver : BroadcastReceiver() {
             try {
                 Settings.init(context)
                 NewsAlarmScheduler.reschedule(context)
+                info.dourok.voicebot.alarm.AlarmScheduler.reschedule(context)
             } catch (e: Exception) {
                 Log.e("BootReceiver", "News alarm reschedule failed", e)
             }

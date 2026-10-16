@@ -72,6 +72,13 @@ public final class Podcasts {
     // learning; every one is free to listen to in full. News comes only from press licensed in
     // Vietnam (RFI was dropped for that reason in 1.5.13).
     private static final List<Show> SHOWS = Collections.unmodifiableList(Arrays.asList(
+            // News first, from press licensed in Vietnam (VOV, VnExpress, VietNamNet).
+            new Show("vovthoisu", 1448565355L, "VOV - Chương trình Thời sự", "Thời sự VOV",
+                    "https://anchor.fm/s/86ec8d4/podcast/rss"),
+            new Show("vnexpress", 1751444063L, "VnExpress Hôm nay", "VnExpress",
+                    ""),   // address known only to Apple's directory
+            new Show("vietnamnet", 1695535499L, "Podcast VietNamNet", "VietNamNet",
+                    "https://vietnamnet.vn/podcast-google.rss"),
             new Show("trikycamxuc", 1355572154L, "Tri Kỷ Cảm Xúc", "Tri Kỷ Cảm Xúc",
                     "https://feeds.soundcloud.com/users/soundcloud:users:174938737/sounds.rss"),
             new Show("haveasip", 1540283905L, "Have A Sip", "Have A Sip",
@@ -80,13 +87,6 @@ public final class Podcasts {
                     "https://feeds.soundcloud.com/users/soundcloud:users:341012174/sounds.rss"),
             new Show("doctruyen", 1702660933L, "Đọc truyện đêm khuya - Đài Hà Nội", "Truyện đêm khuya",
                     "https://anchor.fm/s/e75b3a50/podcast/rss"),
-            // News from Vietnamese press licensed in Vietnam (VOV, VnExpress, VietNamNet).
-            new Show("vovthoisu", 1448565355L, "VOV - Chương trình Thời sự", "Thời sự VOV",
-                    "https://anchor.fm/s/86ec8d4/podcast/rss"),
-            new Show("vnexpress", 1751444063L, "VnExpress Hôm nay", "VnExpress",
-                    ""),   // address known only to Apple's directory
-            new Show("vietnamnet", 1695535499L, "Podcast VietNamNet", "VietNamNet",
-                    "https://vietnamnet.vn/podcast-google.rss"),
             new Show("thitruong", 1649143152L, "5 Phút Chuyện Thị Trường", "Chuyện thị trường",
                     "https://anchor.fm/s/b263c470/podcast/rss"),
             new Show("spiderum", 1498937274L, "Spiderum Official", "Spiderum",

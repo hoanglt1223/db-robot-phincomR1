@@ -30,6 +30,8 @@ màn hình.
 - **Ra lệnh bằng giọng nói** — "mở bài Nơi này có anh", "tăng âm lượng lên 70", "mở VOV giao
   thông Hà Nội", "dừng nhạc" (xem [Lệnh giọng nói](#lệnh-giọng-nói)).
 - **Radio** — 8 kênh VOV, mở bằng giọng nói hoặc bấm trong tab Media.
+- **Báo thức** — đặt giờ, chọn ngày lặp lại, báo bằng tiếng mặc định hoặc tệp âm thanh của bạn;
+  bấm nút trên đỉnh loa để tắt (xem [Báo thức](#báo-thức)).
 - **Podcast** — 15 chương trình podcast miễn phí bằng tiếng Việt và tiếng Anh, chạm là loa phát
   tập mới nhất; tìm thêm podcast khác ngay trong tab Media.
 - **YouTube Music** — tìm và xem video, nghe nhạc YouTube ngay trên trang điều khiển, không cần
@@ -277,6 +279,23 @@ chủ dự án); thẻ **Máy chủ nhạc** trong tab System có ô nhập cho 
 
 Loa tự giải mã và phát MP3, nên nhạc không đi qua đường thoại của trợ lý.
 
+## Báo thức
+
+Thẻ **Báo thức** trong tab System:
+
+- **+ Thêm** → chọn giờ, các ngày lặp lại (T2…CN; không chọn ngày nào = báo một lần rồi tự tắt),
+  âm thanh và ghi chú, rồi **Lưu**. Tối đa 12 báo thức; công tắc bên phải bật/tắt từng cái.
+- **Âm thanh**: tiếng mặc định có sẵn trong ứng dụng, hoặc **Tải âm thanh lên…** một tệp MP3, M4A,
+  AAC, OGG, WAV hay FLAC (tối đa 15 MB, 10 tệp, lưu trên loa). Nút ▶ phát thử 12 giây trên loa.
+- **Âm lượng báo**: loa chuyển sang mức này khi báo (tiếng to dần trong 20 giây đầu) rồi trả lại
+  âm lượng cũ khi tắt.
+- **Tắt**: bấm nút trên đỉnh loa, hoặc thanh **Tắt báo thức** hiện ở đầu trang điều khiển. Không ai
+  tắt thì loa tự tắt sau 10 phút. Nhạc đang phát tạm dừng và phát tiếp sau đó; trong lúc báo, loa
+  không nghe từ đánh thức.
+
+Giờ báo theo múi giờ của thẻ **Vị trí & thời tiết**. Báo thức nằm trên loa (AlarmManager), không cần
+máy chủ hay Internet; sau khi mất điện, loa tự hẹn lại khi đồng hồ đã đúng giờ.
+
 ## YouTube và Podcast
 
 Hai hàng mới trong tab Media, ngay trên và dưới hàng Radio:
@@ -347,6 +366,7 @@ Bản release là bản để chạy trên loa (đã tối ưu bằng R8). `appl
 | `…/voicebot/media/LocalMusicPlayer.kt` | Phát nhạc từ máy chủ nhạc, lấy quang phổ |
 | `…/voicebot/weather/` | Vị trí, múi giờ, thời tiết (`Weather.java`, `LocationManager.kt`) |
 | `…/voicebot/mcp/` | Công cụ MCP cho trợ lý (`DeviceMcp.java`, `DeviceTools.kt`) |
+| `…/voicebot/alarm/AlarmBook.java`, `AlarmScheduler.kt`, `AlarmRinger.kt` | Báo thức: quy tắc giờ báo, hẹn giờ, phát chuông |
 | `…/voicebot/media/Podcasts.java`, `YouTubeSearch.java` | Danh sách podcast, đọc RSS, chuyển tập cho trình phát; tìm video YouTube cho trang điều khiển |
 | `…/voicebot/media/RadioStations.java`, `HlsAudioStream.java`, `MusicService.kt` | Danh sách kênh radio, đọc luồng HLS của đài; phát nhạc/radio theo lệnh giọng nói |
 | `…/voicebot/domain/voice/VoiceGate.kt` | Tắt nghe từ đánh thức và gọi loa từ trang điều khiển |
