@@ -3,6 +3,12 @@
 Mỗi bản một mục `## v<versionName>`. Khi phát hành, đoạn văn dưới mục đó được đưa vào trang Release
 và vào ô "Bản mới nhất" trong trang điều khiển của loa -- viết ngắn, cho người dùng đọc.
 
+## v1.5.15
+
+- **Nhóm loa — phát cùng lúc trên nhiều loa**: thẻ mới **Nhóm loa & màn hình phụ** (tab System). Bấm **Tìm loa trong mạng**, đánh dấu các loa DB-Robot khác rồi bật **Phát cùng các loa trong nhóm**: bài hát, radio, podcast phát ở loa này sẽ phát đồng thời trên các loa đã chọn; tạm dừng, tiếp tục, bài kế, dừng, tua cũng đi theo. Chỉnh âm lượng từng loa ngay trong thẻ. Mọi loa trong nhóm cần chạy bản 1.5.15.
+- **Đặt tên cho loa** (ví dụ "Phòng khách") để dễ nhận ra khi có nhiều loa.
+- **Màn hình phụ ESP32-S3**: gắn màn 2.8" cảm ứng vào mạch ESP32-S3 để thấy loa đang làm gì — lời trò chuyện, khuôn mặt cảm xúc, bài đang phát kèm phổ âm thanh, đồng hồ, thời tiết, báo thức — và bấm nút tạm dừng, bài kế, âm lượng, tắt báo thức. Firmware `DBR1-Display-ESP32S3.bin` có trong bản phát hành này; cách nối dây và nạp xem thư mục `display-esp32s3` trên GitHub.
+
 ## v1.5.14
 
 - **Báo thức** (tab System): đặt nhiều báo thức, chọn ngày lặp lại (hoặc báo một lần), âm lượng báo, tiếng mặc định hoặc tệp âm thanh tự tải lên (MP3, M4A, OGG, WAV…). Bấm nút trên đỉnh loa hoặc nút "Tắt báo thức" trên trang điều khiển để tắt; tự tắt sau 10 phút.

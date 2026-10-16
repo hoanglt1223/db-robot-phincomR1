@@ -75,6 +75,13 @@ class ControlServer @Inject constructor(
             Log.e(TAG, "start failed: ${e.message}")
         }
         Thread({ watchAddress() }, "address-watch").apply { isDaemon = true }.start()
+        // Other speakers and displays find this one over UDP (link/SpeakerLink); lead a group if set.
+        try {
+            info.dourok.voicebot.link.SpeakerLink.start(context, deviceInfo.mac_address, appVersion)
+            info.dourok.voicebot.link.GroupSync.refresh()
+        } catch (e: Exception) {
+            Log.e(TAG, "speaker link: ${e.message}")
+        }
         // An update replaces the package, and with it every alarm AlarmManager held for it.
         try { info.dourok.voicebot.alarm.AlarmScheduler.reschedule(context) } catch (e: Exception) { }
     }
@@ -301,6 +308,18 @@ class ControlServer @Inject constructor(
                     buildAlarmState()
                 }
             )
+            // Speakers playing together (link/GroupSync). The follower calls need the X-DBR-Group
+            // header, which a page from another site cannot send.
+            "/api/group/play" -> json(if (fromGroup(session)) info.dourok.voicebot.link.GroupSync.follow(bodyOf(session)) else FOREIGN_ORIGIN)
+            "/api/group/go" -> json(if (fromGroup(session)) info.dourok.voicebot.link.GroupSync.go(bodyOf(session)) else FOREIGN_ORIGIN)
+            "/api/group/cmd" -> json(if (fromGroup(session)) info.dourok.voicebot.link.GroupSync.command(bodyOf(session)) else FOREIGN_ORIGIN)
+            "/api/group/state" -> json(buildGroupState())
+            "/api/group/scan" -> json(handleGroupScan())
+            "/api/group/save" -> json(if (sameOrigin(session)) handleGroupSave(bodyOf(session)) else FOREIGN_ORIGIN)
+            "/api/group/volume" -> json(
+                if (!sameOrigin(session)) FOREIGN_ORIGIN
+                else """{"ok":${info.dourok.voicebot.link.GroupSync.memberVolume(param(session, "ip"), param(session, "v").toIntOrNull() ?: 50)}}"""
+            )
             "/api/radio/stations" -> json(buildRadioStations())
             // YouTube in the panel: the search runs here (a web page cannot ask YouTube itself),
             // the video plays in YouTube's embedded player on the phone -- see YouTubeSearch.
@@ -427,6 +446,7 @@ class ControlServer @Inject constructor(
             "auto_update" -> Settings.autoUpdate = v == "true"
             "pause_on_music" -> Settings.pauseOnMusic = v == "true"
             "announce_ip" -> Settings.announceIp = v == "true"
+            "speaker_name" -> Settings.speakerName = v
             "ha_url" -> Settings.haUrl = v
             "ha_token" -> Settings.haToken = v
             "ha_devices" -> Settings.haDevices = v
@@ -600,6 +620,8 @@ class ControlServer @Inject constructor(
         o.put("voice_paused", info.dourok.voicebot.domain.voice.VoiceGate.paused)
         o.put("pause_on_music", Settings.pauseOnMusic)
         o.put("announce_ip", Settings.announceIp)
+        o.put("speaker_name", Settings.speakerName)
+        o.put("displays", info.dourok.voicebot.link.SpeakerLink.displays())
         // An alarm ringing: the panel shows a "Tắt báo thức" bar wherever the owner is.
         o.put("alarm_ringing", info.dourok.voicebot.alarm.AlarmRinger.ringing?.let { r ->
             if (r.test) "" else (r.time + if (r.label.isNotEmpty()) " · ${r.label}" else "").ifBlank { "báo thức" }
@@ -1199,6 +1221,58 @@ class ControlServer @Inject constructor(
             arr.put(JSONObject().put("id", it.key).put("name", it.name).put("short", it.shortName))
         }
         return JSONObject().put("ok", true).put("stations", arr).toString()
+    }
+
+    private fun fromGroup(session: IHTTPSession): Boolean =
+        session.headers[info.dourok.voicebot.link.GroupSync.HEADER.lowercase()] == "1"
+
+    private fun buildGroupState(): String {
+        val members = JSONArray()
+        info.dourok.voicebot.link.GroupSync.members().forEach {
+            members.put(JSONObject().put("id", it.id).put("name", it.name).put("ip", it.ip))
+        }
+        return JSONObject()
+            .put("ok", true)
+            .put("name", Settings.speakerName)
+            .put("id", deviceInfo.mac_address)
+            .put("ip", info.dourok.voicebot.net.SpeakerAddress.current())
+            .put("sync", Settings.groupSync)
+            .put("members", members)
+            .put("following", LocalMusicPlayer.groupFollower)
+            .put("displays", info.dourok.voicebot.link.SpeakerLink.displays())
+            .toString()
+    }
+
+    private fun handleGroupScan(): String {
+        val found = JSONArray()
+        info.dourok.voicebot.link.SpeakerLink.discover().forEach { found.put(it) }
+        // keep the members' addresses current: a router may have handed one a new address
+        val byId = HashMap<String, JSONObject>()
+        for (i in 0 until found.length()) found.optJSONObject(i)?.let { byId[it.optString("id")] = it }
+        val members = info.dourok.voicebot.link.GroupSync.members()
+        if (members.any { m -> byId[m.id]?.let { it.optString("ip") != m.ip || it.optString("name") != m.name } == true }) {
+            info.dourok.voicebot.link.GroupSync.save(Settings.groupSync, members.map { m ->
+                byId[m.id]?.let { info.dourok.voicebot.link.GroupSync.Member(m.id, it.optString("name", m.name), it.optString("ip", m.ip)) } ?: m
+            })
+        }
+        return JSONObject(buildGroupState()).put("found", found).toString()
+    }
+
+    /** Body: {"name":"…","sync":bool,"members":[{id,name,ip}]}. */
+    private fun handleGroupSave(body: String): String {
+        val j = try { JSONObject(body) } catch (e: Exception) { return """{"ok":false,"error":"Dữ liệu không đọc được."}""" }
+        if (j.has("name")) Settings.speakerName = j.optString("name")
+        val list = ArrayList<info.dourok.voicebot.link.GroupSync.Member>()
+        val a = j.optJSONArray("members") ?: JSONArray()
+        for (i in 0 until minOf(a.length(), 8)) {
+            val o = a.optJSONObject(i) ?: continue
+            val ip = o.optString("ip")
+            if (!info.dourok.voicebot.net.SpeakerAddress.isAddress(ip) || o.optString("id") == deviceInfo.mac_address) continue
+            list.add(info.dourok.voicebot.link.GroupSync.Member(o.optString("id"), o.optString("name").take(32), ip))
+        }
+        info.dourok.voicebot.link.GroupSync.save(j.optBoolean("sync", Settings.groupSync), list)
+        AppLog.i(if (Settings.groupSync && list.isNotEmpty()) "Nhóm loa: phát cùng ${list.size} loa" else "Nhóm loa: tắt phát cùng")
+        return buildGroupState()
     }
 
     private fun buildAlarmState(): String {

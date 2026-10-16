@@ -122,6 +122,18 @@ object LocationManager {
         return o.toString()
     }
 
+    /** Current temperature and sky from the cached forecast only (never the network), or null. */
+    fun cachedNow(): JSONObject? {
+        if (!hasPlace) return null
+        val have = synchronized(lock) { cached } ?: return null
+        val cur = have.optJSONObject("current") ?: return null
+        val t = cur.optDouble("temperature_2m", Double.NaN)
+        if (t.isNaN()) return null
+        val code = cur.optInt("weather_code", -1)
+        return JSONObject().put("t", Math.round(t)).put("c", code).put("d", Weather.describe(code))
+            .put("day", cur.optInt("is_day", 1) == 1).put("city", Settings.locName)
+    }
+
     private fun forecast(): JSONObject {
         val key = Settings.locLat + "," + Settings.locLon
         synchronized(lock) {

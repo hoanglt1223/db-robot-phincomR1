@@ -1,0 +1,5 @@
+## Used only when the components/ folder is absent: idf.py then downloads these.
+dependencies:
+  idf: ">=5.3"
+  lvgl/lvgl: "9.2.2"
+  espressif/esp_lcd_ili9341: "^2.0.0"

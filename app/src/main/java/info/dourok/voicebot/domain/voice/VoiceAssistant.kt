@@ -465,7 +465,10 @@ class VoiceAssistant @Inject constructor(
                 autoTurns = 0
                 addMessage("user", it)
             }
-            "llm" -> json.optString("emotion").takeIf { it.isNotEmpty() }?.let { emotion.value = it }
+            "llm" -> json.optString("emotion").takeIf { it.isNotEmpty() }?.let {
+                emotion.value = it
+                VoiceDebugState.emotion = it
+            }
             "media_queue" -> {
                 val items = json.optJSONArray("items")
                 val list = mutableListOf<MediaQueueItem>()

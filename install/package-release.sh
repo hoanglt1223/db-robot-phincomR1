@@ -8,6 +8,7 @@
 #         release/install.sh, install.ps1   bộ cài cho Termux/macOS/Linux và Windows
 #         release/DB-Robot-R1-Setup.exe     bộ cài Windows một tệp: bấm đúp là chạy
 #         release/DB-Robot-R1-Windows.zip   cùng bộ cài ở dạng zip (dự phòng khi tệp .exe bị chặn)
+#         release/DBR1-Display-ESP32S3.bin firmware màn hình phụ ESP32-S3 (nạp một lần từ máy tính)
 #         release-body.md                   nội dung trang Release
 set -euo pipefail
 
@@ -48,6 +49,9 @@ fi
 
 cp "$APK" "release/$APK"
 cp "$APK" "release/DB-Robot-R1.apk"
+# firmware for the ESP32-S3 display (display-esp32s3/), flashed once from a computer
+FW=display-esp32s3/firmware/DBR1-Display-ESP32S3.bin
+[ -f "$FW" ] && cp "$FW" release/
 
 NOTES="$NOTES" python3 - <<'PY'
 import hashlib, json, os

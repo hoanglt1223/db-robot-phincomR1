@@ -15,4 +15,6 @@ package info.dourok.voicebot.domain.voice
 object VoiceDebugState {
     @Volatile var awake: Boolean = false
     @Volatile var voiceState: String = "IDLE"
+    /** The assistant's last emotion ("happy", "thinking"…), for a display (link/SpeakerLink). */
+    @Volatile var emotion: String = "neutral"
 }

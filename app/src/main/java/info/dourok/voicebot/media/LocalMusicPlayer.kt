@@ -41,6 +41,8 @@ object LocalMusicPlayer {
     private const val LOADING = "downloading"   // connecting + buffering; drawn as a spinner
     private const val PLAYING = "playing"
     private const val PAUSED = "paused"
+    /** A group follower that never hears "go" starts by itself after this long. */
+    private const val HOLD_MAX_MS = 12_000L
     private const val STOPPED = "stopped"
     private const val ERROR = "error"
 
@@ -102,8 +104,91 @@ object LocalMusicPlayer {
         main.post {
             queue = tracks
             heldForVoice = false
+            groupFollower = false
             startAt(startIndex.coerceIn(0, tracks.size - 1))
         }
+    }
+
+    // ── Group playback (link/GroupSync) ──────────────────────────────────────────
+    // Speakers in a group start each track together: every one prepares it, holds it once
+    // prepared, and starts when the leader says "go" (after all are ready, or a timeout). Without
+    // the hold, each would start as soon as its own stream had buffered, seconds apart.
+
+    /** Told when THIS speaker, leading a group, starts a track or is paused/resumed/stopped. */
+    interface GroupLeader {
+        /** A track is about to play here; [token] names this start for [goHeld]. */
+        fun onTrack(track: Track, token: String)
+        fun onCommand(command: String, arg: Int)
+    }
+
+    /** Set by GroupSync while this speaker leads a group with "Phát cùng" on. */
+    @Volatile var groupLeader: GroupLeader? = null
+
+    /** The current track was sent by a group leader (so nothing here is forwarded again). */
+    @Volatile var groupFollower = false
+        private set
+
+    @Volatile private var holdToken = ""        // a prepared track waits for goHeld(holdToken)
+    @Volatile private var holdReady = false     // ... and it is prepared
+    private val autoGo = Runnable { goNow() }   // the leader never said go: start anyway
+
+    /**
+     * Play one track for a group leader: prepare it and hold it until [goHeld] with [token].
+     * Starts by itself after [HOLD_MAX_MS] should the go never come.
+     */
+    fun playForGroup(track: Track, token: String) {
+        main.post {
+            queue = listOf(track)
+            heldForVoice = false
+            groupFollower = true
+            startAt(0, token)
+        }
+    }
+
+    /** Whether the held track [token] has finished preparing (polled by GroupSync). */
+    fun isReady(token: String): Boolean = holdToken == token && holdReady
+
+    /** Start the held track [token] in [delayMs] (the same delay on every speaker of the group). */
+    fun goHeld(token: String, delayMs: Long) {
+        main.post {
+            if (holdToken != token) return@post
+            main.removeCallbacks(autoGo)
+            if (delayMs > 0) main.postDelayed(autoGo, delayMs) else goNow()
+        }
+    }
+
+    /** A follower pausing/resuming/stopping because its leader did; never forwarded. */
+    fun groupCommand(command: String, arg: Int) {
+        if (!groupFollower) return
+        when (command) {
+            "pause" -> main.post { pauseNow() }
+            "resume" -> main.post { resumeNow() }
+            "stop" -> main.post { stopNow(STOPPED) }
+            "seek" -> seekTo(arg)
+        }
+    }
+
+    private fun goNow() {
+        main.removeCallbacks(autoGo)
+        holdToken = ""
+        val p = player ?: return
+        if (!prepared) return            // onPrepared sees no hold and starts by itself
+        if (wantPlaying) {
+            try {
+                p.start()
+                state = PLAYING
+                scheduleTick()
+            } catch (e: Exception) {
+                stopNow(ERROR)
+            }
+        } else {
+            state = PAUSED
+        }
+    }
+
+    private fun leaderCommand(command: String, arg: Int = 0) {
+        if (groupFollower) return
+        try { groupLeader?.onCommand(command, arg) } catch (_: Exception) { }
     }
 
     /**
@@ -121,16 +206,17 @@ object LocalMusicPlayer {
             durationMs = 0
             wantPlaying = false
             state = PAUSED
+            groupFollower = false
             heldForVoice = true   // resumeNow() finds no player and starts the queued track
         }
     }
 
     fun pause() {
-        main.post { heldForVoice = false; pauseNow() }
+        main.post { heldForVoice = false; pauseNow(); leaderCommand("pause") }
     }
 
     fun resume() {
-        main.post { heldForVoice = false; resumeNow() }
+        main.post { heldForVoice = false; resumeNow(); leaderCommand("resume") }
     }
 
     fun next() {
@@ -142,7 +228,7 @@ object LocalMusicPlayer {
 
     fun stop() {
         pendingForVoice = false
-        main.post { heldForVoice = false; stopNow(STOPPED) }
+        main.post { heldForVoice = false; stopNow(STOPPED); leaderCommand("stop") }
     }
 
     fun seekTo(positionS: Int) {
@@ -153,6 +239,7 @@ object LocalMusicPlayer {
             if (p != null && prepared && durationMs > 0) {
                 try {
                     p.seekTo(positionS * 1000)
+                    leaderCommand("seek", positionS)
                 } catch (e: Exception) {
                     AppLog.w("Không tua được: ${e.message}")
                 }
@@ -267,14 +354,27 @@ object LocalMusicPlayer {
 
     // ── main thread only below ──────────────────────────────────────────────
 
-    private fun startAt(i: Int) {
+    private fun startAt(i: Int, followToken: String = "") {
         releasePlayer()
+        main.removeCallbacks(autoGo)
         index = i
         positionMs = 0
         durationMs = 0
         val track = queue[i]
         state = LOADING
         wantPlaying = true
+        holdReady = false
+        holdToken = followToken
+        if (followToken.isEmpty() && !groupFollower) {
+            // leading a group: the others prepare the same track and everyone starts on "go"
+            val leader = groupLeader
+            if (leader != null) {
+                val token = java.lang.Long.toHexString(System.nanoTime()) + i
+                holdToken = token
+                try { leader.onTrack(track, token) } catch (_: Exception) { holdToken = "" }
+            }
+        }
+        if (holdToken.isNotEmpty()) main.postDelayed(autoGo, HOLD_MAX_MS)
         AppLog.i("Phát nhạc: ${track.title}")
         try {
             val p = MediaPlayer()
@@ -285,7 +385,9 @@ object LocalMusicPlayer {
                     prepared = true
                     durationMs = try { mp.duration.coerceAtLeast(0) } catch (e: Exception) { 0 }
                     attachVisualizer(mp.audioSessionId)
-                    if (wantPlaying) {
+                    if (holdToken.isNotEmpty()) {
+                        holdReady = true   // waiting for the group's "go" (goHeld / autoGo)
+                    } else if (wantPlaying) {
                         mp.start()
                         state = PLAYING
                         scheduleTick()
@@ -296,7 +398,11 @@ object LocalMusicPlayer {
             }
             p.setOnCompletionListener { mp ->
                 if (mp === player) {
-                    if (index + 1 < queue.size) startAt(index + 1) else stopNow(STOPPED)
+                    if (index + 1 < queue.size) startAt(index + 1)
+                    else {
+                        stopNow(STOPPED)
+                        leaderCommand("stop")
+                    }
                 }
             }
             p.setOnErrorListener { mp, what, extra ->
@@ -349,6 +455,8 @@ object LocalMusicPlayer {
     }
 
     private fun stopNow(endState: String) {
+        main.removeCallbacks(autoGo)
+        holdToken = ""
         releasePlayer()
         wantPlaying = false
         positionMs = 0
@@ -423,6 +531,38 @@ object LocalMusicPlayer {
             }
             main.postDelayed(this, TICK_MS)
         }
+    }
+
+    /** Bars for a display (link/SpeakerLink): [out] filled, 0..255, low first; false when silent. */
+    fun spectrum(out: IntArray): Boolean {
+        val levels = IntArray(BANDS)
+        synchronized(vizLock) {
+            val v = visualizer ?: return false
+            val buf = fftBuf ?: return false
+            if (state != PLAYING) return false
+            try {
+                if (v.getFft(buf) != Visualizer.SUCCESS) return false
+                fillBands(buf, levels)
+            } catch (e: Throwable) {
+                return false
+            }
+        }
+        val per = BANDS / out.size
+        for (k in out.indices) {
+            var m = 0
+            for (j in 0 until per) m = maxOf(m, levels[k * per + j])
+            out[k] = m
+        }
+        return true
+    }
+
+    /** What the display shows for the song: state, title, artist, position, length. */
+    fun nowPlayingBrief(): Array<Any>? {
+        val q = queue
+        val i = index
+        if (i < 0 || i >= q.size || state == IDLE) return null
+        val t = q[i]
+        return arrayOf(state, t.title, t.artist, t.id, positionMs / 1000, durationMs / 1000)
     }
 
     private fun scheduleTick() {

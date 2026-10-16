@@ -30,12 +30,16 @@ màn hình.
 - **Ra lệnh bằng giọng nói** — "mở bài Nơi này có anh", "tăng âm lượng lên 70", "mở VOV giao
   thông Hà Nội", "dừng nhạc" (xem [Lệnh giọng nói](#lệnh-giọng-nói)).
 - **Radio** — 8 kênh VOV, mở bằng giọng nói hoặc bấm trong tab Media.
+- **Nhóm loa** — nhiều loa DB-Robot phát cùng một bài, một kênh radio cùng lúc ở các phòng
+  (xem [Nhóm loa](#nhóm-loa)).
+- **Màn hình phụ** — một mạch ESP32-S3 gắn màn 2.8" cảm ứng hiển thị lời trò chuyện, bài đang
+  phát, đồng hồ, thời tiết, báo thức của loa (xem [Màn hình phụ](#màn-hình-phụ-esp32-s3)).
 - **Báo thức** — đặt giờ, chọn ngày lặp lại, báo bằng tiếng mặc định hoặc tệp âm thanh của bạn;
   bấm nút trên đỉnh loa để tắt (xem [Báo thức](#báo-thức)).
 - **Podcast** — 15 chương trình podcast miễn phí bằng tiếng Việt và tiếng Anh, chạm là loa phát
   tập mới nhất; tìm thêm podcast khác ngay trong tab Media.
-- **YouTube Music** — tìm và xem video, nghe nhạc YouTube ngay trên trang điều khiển, không cần
-  máy chủ nhạc (phát trên điện thoại / máy tính đang mở trang, không phát ra loa).
+- **YouTube Music** — tìm trên YouTube và phát ra loa, hoặc xem video ngay trên trang điều khiển
+  (xem [YouTube và Podcast](#youtube-và-podcast)).
 - **Tắt nghe và gọi loa bằng tay** — hai nút trên trang điều khiển để tắt từ đánh thức khi
   không muốn loa xen vào (lúc nghe nhạc, xem tivi) và gọi loa khi cần.
 - **Nghe nhạc** — tìm bài hát và phát ngay trên loa, có quang phổ theo nhạc, thanh âm lượng, nút
@@ -296,6 +300,42 @@ Thẻ **Báo thức** trong tab System:
 Giờ báo theo múi giờ của thẻ **Vị trí & thời tiết**. Báo thức nằm trên loa (AlarmManager), không cần
 máy chủ hay Internet; sau khi mất điện, loa tự hẹn lại khi đồng hồ đã đúng giờ.
 
+## Nhóm loa
+
+Thẻ **Nhóm loa & màn hình phụ** trong tab System:
+
+- **Tên loa này** — tên hiện ở các loa khác và trên màn hình phụ.
+- **Tìm loa trong mạng** — liệt kê các loa DB-Robot khác cùng Wi-Fi (cần bản 1.5.15 trở lên).
+  Đánh dấu loa muốn phát cùng, rồi bật **Phát cùng các loa trong nhóm**.
+- Từ đó loa này là **loa chính**: bài hát (từ tab Media hay ra lệnh bằng giọng nói), kênh radio,
+  tập podcast phát ở đây được gửi sang các loa đã chọn. Mọi loa chuẩn bị xong rồi **cùng bắt đầu**
+  theo hiệu lệnh của loa chính; tạm dừng, phát tiếp, bài kế, dừng, tua đều đi theo. Thanh trượt
+  cạnh mỗi loa chỉnh âm lượng loa đó.
+
+Các loa lệch nhau chỉ vài chục mili giây — đủ cho nhạc ở nhiều phòng, nhưng không dùng để ghép
+hai loa thành cặp stereo đặt cạnh nhau. Lời trò chuyện với trợ lý vẫn chỉ phát ở loa được gọi.
+
+## Màn hình phụ ESP32-S3
+
+Loa không có màn hình, nên có thể gắn thêm một màn hình phụ: mạch **ESP32-S3-DevKitC-1 N16R8** và
+màn **2.8" SPI TFT 240×320 cảm ứng** (ST7789 hoặc ILI9341). Màn hình vào cùng Wi-Fi, tự tìm loa và
+hiển thị: khuôn mặt và lời trò chuyện khi đang nói chuyện; tên bài, phổ âm thanh, thời gian và nút
+điều khiển khi phát nhạc; đồng hồ lớn, thời tiết, báo thức sắp tới lúc rảnh; nút tắt khi báo thức
+reo. Một loa có thể có nhiều màn hình.
+
+Nối dây, nạp firmware (`DBR1-Display-ESP32S3.bin` trong mỗi bản phát hành, nạp bằng trình duyệt
+được) và cài đặt: [display-esp32s3/README.md](display-esp32s3/README.md).
+
+| Màn hình | ESP32-S3 | | Màn hình | ESP32-S3 |
+|---|---|---|---|---|
+| VCC | 3V3 | | LED | GPIO 21 |
+| GND | GND | | SDO (MISO) | để trống |
+| CS | GPIO 10 | | T_CLK | GPIO 12 |
+| RESET | GPIO 14 | | T_CS | GPIO 1 |
+| DC | GPIO 9 | | T_DIN | GPIO 11 |
+| SDI (MOSI) | GPIO 11 | | T_DO | GPIO 13 |
+| SCK | GPIO 12 | | T_IRQ | GPIO 2 |
+
 ## YouTube và Podcast
 
 Hai hàng mới trong tab Media, ngay trên và dưới hàng Radio:
@@ -370,6 +410,9 @@ Bản release là bản để chạy trên loa (đã tối ưu bằng R8). `appl
 | `…/voicebot/media/Podcasts.java`, `YouTubeSearch.java` | Danh sách podcast, đọc RSS, chuyển tập cho trình phát; tìm video YouTube cho trang điều khiển |
 | `…/voicebot/media/RadioStations.java`, `HlsAudioStream.java`, `MusicService.kt` | Danh sách kênh radio, đọc luồng HLS của đài; phát nhạc/radio theo lệnh giọng nói |
 | `…/voicebot/domain/voice/VoiceGate.kt` | Tắt nghe từ đánh thức và gọi loa từ trang điều khiển |
+| `…/voicebot/link/SpeakerLink.kt` | Dịch vụ UDP cổng 8089: các loa tìm nhau, màn hình phụ nhận trạng thái và phổ âm thanh |
+| `…/voicebot/link/GroupSync.kt` | Nhóm loa: loa chính gửi bài cho các loa khác, cùng bắt đầu, chuyển lệnh tạm dừng/tua |
+| `display-esp32s3/` | Firmware màn hình phụ ESP32-S3 (ESP-IDF, LVGL) và tệp `.bin` đã build |
 | `…/voicebot/net/Https.java` | Kết nối https với danh sách chứng chỉ gốc đi kèm ứng dụng |
 | `…/voicebot/net/WifiSetup.java` | Quét Wi-Fi và chuyển loa sang mạng khác, kể cả từ chế độ cài đặt mạng "Phicomm R1"; thất bại thì quay lại trạng thái cũ |
 | `…/voicebot/net/SpeakerAddress.java` | Địa chỉ IP của loa và cách đọc nó thành lời |

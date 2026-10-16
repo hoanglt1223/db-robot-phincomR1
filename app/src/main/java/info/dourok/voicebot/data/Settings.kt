@@ -143,6 +143,19 @@ object Settings {
         get() = prefs.getString("loc_tz", AppConfig.TIME_ZONE)!!
         set(v) = prefs.edit().putString("loc_tz", v).apply()
 
+    /** This speaker's name, shown to other speakers and on a display ("Phòng khách"…). */
+    var speakerName: String
+        get() = prefs.getString("speaker_name", "Loa Phicomm R1")!!
+        set(v) = prefs.edit().putString("speaker_name", v.trim().take(32).ifBlank { "Loa Phicomm R1" }).apply()
+    /** Speakers that play along with this one: JSON [{id,name,ip}] (link/GroupSync). */
+    var groupMembers: String
+        get() = prefs.getString("group_members", "[]")!!
+        set(v) = prefs.edit().putString("group_members", v).apply()
+    /** Play the same song / station on the group's speakers when this one plays. */
+    var groupSync: Boolean
+        get() = prefs.getBoolean("group_sync", false)
+        set(v) = prefs.edit().putBoolean("group_sync", v).apply()
+
     /** The owner's alarms, as AlarmBook JSON (alarm/AlarmBook.java). */
     var alarmsJson: String
         get() = prefs.getString("alarms", "[]")!!

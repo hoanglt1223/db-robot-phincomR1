@@ -501,6 +501,20 @@ select::-ms-expand{display:none;}
 #updStat.ok{color:var(--ok);}
 
 /* ── WI-FI CARD ─────────────────────────────────── */
+.ib-group{background:linear-gradient(135deg,#8b5cf6,#ec4899);}
+.grp-list{display:flex;flex-direction:column;gap:2px;margin:4px 0;}
+.grp-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);flex-wrap:wrap;}
+.grp-item:last-child{border-bottom:0;}
+.grp-item input[type=checkbox]{width:20px;height:20px;accent-color:var(--a1);flex-shrink:0;}
+.grp-info{flex:1;min-width:0;}
+.grp-info b{display:block;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.grp-info small{display:block;font-size:11px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.grp-vol{display:flex;align-items:center;gap:8px;flex:1 1 100%;padding-left:30px;}
+.grp-vol input{flex:1;min-width:0;}
+.grp-vol span{font-size:11.5px;color:var(--mut);min-width:34px;text-align:right;}
+.grp-follow{margin:2px 0 6px;padding:8px 10px;border-radius:10px;background:var(--grad-dim);color:var(--a1);font-size:12px;font-weight:600;}
+.grp-follow[hidden]{display:none;}
+.grp-sub{margin:12px 0 2px;font-size:10.5px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--mut);}
 .ib-alarm{background:linear-gradient(135deg,#f97316,#fb7185);}
 .al-add{border:1px solid rgba(var(--ar),.25);background:var(--grad-dim);color:var(--a1);border-radius:16px;padding:6px 12px;
   font:700 12px/1 inherit;cursor:pointer;}
@@ -1064,6 +1078,19 @@ select:active,select:focus{box-shadow:0 0 0 4px var(--grad-dim);}
       <div class="hint">Loa phát tiếng báo thức tới khi bạn bấm nút trên đỉnh loa (hoặc nút Tắt ở đây), tự tắt sau 10 phút. Nhạc đang phát tạm dừng rồi phát tiếp. Báo thức không chọn ngày nào chỉ báo một lần rồi tự tắt. <details><summary>Chi tiết</summary><p>Âm thanh tự chọn: MP3, M4A, AAC, OGG, WAV hoặc FLAC, tối đa 15 MB, lưu trên loa (tối đa 10 tệp). Giờ báo theo múi giờ trong thẻ Vị trí &amp; thời tiết.</p><p>Trong lúc báo thức, loa không nghe từ đánh thức để tiếng chuông không gọi nhầm trợ lý.</p></details></div>
     </div>
 
+    <div class="card" id="cardGroup">
+      <div class="ch"><span class="icon-badge ib-group"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="1.8" y="5" width="5.4" height="11" rx="2.4"/><rect x="12.8" y="5" width="5.4" height="11" rx="2.4"/><circle cx="4.5" cy="12.2" r="1.3"/><circle cx="15.5" cy="12.2" r="1.3"/><path d="M8.6 9.2c.9-.8 1.9-.8 2.8 0M7.4 7.4c1.6-1.5 3.6-1.5 5.2 0"/></svg></span><h2>Nhóm loa &amp; màn hình phụ</h2></div>
+      <div class="row"><label>Tên loa này</label><input class="codein ui" id="grpName" maxlength="32" placeholder="Ví dụ: Phòng khách" onkeydown="if(event.key==='Enter')groupSave()"><button class="tbtn" onclick="groupSave()" aria-label="Lưu tên loa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button></div>
+      <div class="row"><label class="wide" style="flex:1 1 auto">Phát cùng các loa trong nhóm</label><label class="sw sw-sm"><input type="checkbox" id="grpSync" onchange="groupSave()" aria-label="Phát cùng các loa trong nhóm"><span></span></label></div>
+      <div class="grp-follow" id="grpFollow" hidden>Loa này đang phát theo một loa chính khác.</div>
+      <div class="grp-list" id="grpList"></div>
+      <div class="row" style="gap:8px"><button class="btn rec" style="flex:1;width:auto" id="grpScanBtn" onclick="groupScan()">Tìm loa trong mạng</button></div>
+      <div class="hint" id="grpStat"></div>
+      <div class="grp-sub">Màn hình phụ</div>
+      <div class="grp-list" id="grpDisplays"><div class="hint">Chưa có màn hình nào nối.</div></div>
+      <div class="hint">Bấm Tìm loa, đánh dấu các loa muốn phát cùng rồi bật “Phát cùng”. Từ đó bài hát, radio hay podcast phát ở loa này sẽ phát cùng lúc ở các loa đã chọn; tạm dừng, tiếp tục, dừng cũng đi theo. Âm lượng mỗi loa chỉnh riêng ở đây. <details><summary>Chi tiết</summary><p>Các loa đợi nhau chuẩn bị xong rồi mới cùng bắt đầu, nên lệch nhau rất ít — hợp để nghe ở nhiều phòng; không đủ khít để ghép đôi loa trái/phải. Các loa phải cùng mạng Wi-Fi và cùng chạy DB-Robot bản 1.5.15 trở lên.</p><p>Màn hình phụ là mạch ESP32-S3 có màn hình chạy firmware DB-Robot Display: nó tự tìm loa trong mạng và hiện trạng thái, lời thoại, bài đang phát, đồng hồ, thời tiết, báo thức.</p></details></div>
+    </div>
+
     <div class="card" id="cardWifi">
       <div class="ch"><span class="icon-badge ib-wifi"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M2.5 8a11 11 0 0115 0"/><path d="M5.2 10.9a7 7 0 019.6 0"/><path d="M7.8 13.7a3.3 3.3 0 014.4 0"/><circle cx="10" cy="16.3" r="1.1" fill="currentColor" stroke="none"/></svg></span><h2>Wi-Fi</h2></div>
       <div class="wifi-now" id="wifiNow"><div class="li-info"><div class="li-title">Đang đọc…</div></div></div>
@@ -1290,7 +1317,7 @@ function restart(){if(confirm('Restart app?'))fetch('/api/restart',{method:'POST
 function tab(t){['set','setup','media'].forEach(x=>{$('p'+x).classList.toggle('on',x===t);$('t'+x).classList.toggle('on',x===t);});
   try{localStorage.setItem('r1-tab',t);}catch(e){}
   if(t==='media'){mediaPollStart();radioLoad();podLoad();}else mediaPollStop();
-  if(t==='setup')alarmLoad();
+  if(t==='setup'){alarmLoad();groupLoad();}
   // Bluetooth state is polled only while its tab is on screen, for the reason media state is: a
   // scan's results change every second and nobody needs them when the card is not being looked at.
   if(t==='setup'){btPollStart();wifiPollStart();}else{btPollStop();wifiPollStop();}
@@ -2425,6 +2452,46 @@ async function radioPlay(id){
 function radioMark(videoId,state){
   const on=(videoId&&String(videoId).indexOf('radio:')===0&&(state==='playing'||state==='downloading'))?String(videoId).slice(6):'';
   document.querySelectorAll('#radioChips .radio-chip').forEach(c=>c.classList.toggle('on',c.dataset.id===on));}
+
+// ── Group of speakers & displays (System tab) ────
+let grpData=null,grpFound=[];
+async function groupLoad(){try{const j=await(await fetch('/api/group/state')).json();if(j.ok){grpData=j;groupRender();}}catch(e){}}
+function groupRender(){
+  const d=grpData;if(!d)return;
+  if(document.activeElement!==$('grpName'))$('grpName').value=d.name||'';
+  $('grpSync').checked=!!d.sync;
+  $('grpFollow').hidden=!d.following;
+  // members first (even when not found this time), then the other speakers found
+  const rows=[];const seen={};
+  (d.members||[]).forEach(m=>{const f=grpFound.find(x=>x.id===m.id);seen[m.id]=1;rows.push({id:m.id,name:(f&&f.name)||m.name,ip:(f&&f.ip)||m.ip,ver:f?f.ver:'',vol:f?f.vol:-1,playing:f?f.playing:'',member:true,online:!!f});});
+  grpFound.forEach(f=>{if(!seen[f.id])rows.push({id:f.id,name:f.name,ip:f.ip,ver:f.ver,vol:f.vol,playing:f.playing,member:false,online:true});});
+  $('grpList').innerHTML=rows.length?rows.map((r,i)=>`
+    <div class="grp-item">
+      <input type="checkbox" ${r.member?'checked':''} onchange="groupToggle(${i},this.checked)" aria-label="Phát cùng ${escq(r.name)}">
+      <div class="grp-info"><b>${escq(r.name||'Loa')}</b><small>${escq(r.ip)}${r.ver?' · v'+escq(r.ver):''}${r.online?'':' · chưa thấy trong lần tìm này'}${r.playing?' · ♪ '+escq(r.playing):''}</small></div>
+      ${r.member&&r.online&&r.vol>=0?`<div class="grp-vol"><input type="range" min="0" max="100" step="5" value="${r.vol}" oninput="this.nextElementSibling.textContent=this.value+'%'" onchange="groupVol('${escq(r.ip)}',this.value)" aria-label="Âm lượng ${escq(r.name)}"><span>${r.vol}%</span></div>`:''}
+    </div>`).join(''):'<div class="hint">Bấm “Tìm loa trong mạng” để thấy các loa DB-Robot khác.</div>';
+  groupRows=rows;
+  const ds=d.displays||[];
+  $('grpDisplays').innerHTML=ds.length?ds.map(x=>`<div class="grp-item"><div class="grp-info"><b>${escq(x.name||'Màn hình')}</b><small>${escq(x.ip)} · đang hiển thị loa này</small></div></div>`).join(''):'<div class="hint">Chưa có màn hình nào nối.</div>';
+}
+let groupRows=[];
+async function groupScan(){
+  $('grpScanBtn').disabled=true;$('grpStat').textContent='Đang tìm loa trong mạng…';
+  try{const j=await(await fetch('/api/group/scan')).json();
+    if(j.ok){grpData=j;grpFound=j.found||[];groupRender();$('grpStat').textContent=grpFound.length?('Thấy '+grpFound.length+' loa khác.'):'Không thấy loa DB-Robot nào khác trong mạng (các loa phải chạy bản 1.5.15 trở lên).';}
+  }catch(e){$('grpStat').textContent='✗ Không tìm được.';}
+  finally{$('grpScanBtn').disabled=false;}
+}
+function groupToggle(i,on){groupRows[i].member=on;groupSave();}
+async function groupSave(){
+  const members=(groupRows.length?groupRows:(grpData&&grpData.members||[]).map(m=>Object.assign({member:true},m))).filter(r=>r.member).map(r=>({id:r.id,name:r.name,ip:r.ip}));
+  try{const j=await(await fetch('/api/group/save',{method:'POST',body:JSON.stringify({name:$('grpName').value.trim(),sync:$('grpSync').checked,members:members})})).json();
+    if(j.ok){grpData=j;groupRender();$('grpStat').textContent=j.sync&&j.members.length?('Đang phát cùng '+j.members.length+' loa.'):(j.members.length?'Đã lưu nhóm. Bật “Phát cùng” để các loa phát theo loa này.':'Đã lưu.');}
+    else $('grpStat').textContent='✗ '+(j.error||'Không lưu được.');
+  }catch(e){$('grpStat').textContent='✗ Không lưu được.';}
+}
+async function groupVol(ip,v){try{await fetch('/api/group/volume?ip='+encodeURIComponent(ip)+'&v='+v,{method:'POST'});}catch(e){}}
 
 // ── Alarms (System tab) ──────────────────────────
 // The list lives on the speaker; the panel edits a copy and saves the whole list back.
