@@ -736,6 +736,7 @@ select::-ms-expand{display:none;}
 .li-play-wrap.yt{display:flex;gap:6px;width:auto;}
 .li-play.ghost{background:var(--card2);color:var(--fg);border:1px solid var(--line);box-shadow:none;}
 .yt-err.info{color:var(--mut);}
+.yt-msg{margin:0 13px 8px;}
 .yt-err{margin-top:8px;font-size:11.5px;color:var(--err);line-height:1.45;}
 .yt-err[hidden]{display:none;}
 .yt-err a{color:var(--a1);font-weight:600;}
@@ -744,6 +745,9 @@ select::-ms-expand{display:none;}
 .yt-now{flex-shrink:0;align-self:center;max-width:52vw;font-size:11px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .yt-now[hidden]{display:none;}
 .list-item.yt-item .li-cover{width:72px;height:41px;border-radius:6px;}
+.li-play.yt-watch{flex-shrink:0;width:34px;height:34px;display:grid;place-items:center;}
+.li-play.yt-watch svg{width:16px;height:16px;}
+.li-play.yt-watch.on{color:var(--a1);border-color:var(--a1);}
 .li-badge{display:inline-block;margin-right:5px;padding:0 5px;border-radius:4px;background:#e11d48;color:#fff;font-size:9.5px;font-weight:700;letter-spacing:.4px;vertical-align:1px;}
 /* The list's own heading in YouTube / podcast views: what it is, and the way back to songs. */
 .list-head{display:flex;align-items:center;gap:10px;padding:10px 4px 8px;border-bottom:1px solid var(--line);}
@@ -1148,13 +1152,14 @@ select:active,select:focus{box-shadow:0 0 0 4px var(--grad-dim);}
     <div id="ytCard" class="mp yt-card" hidden>
       <div class="yt-stage">
         <iframe id="ytFrame" title="Trình phát YouTube" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin" hidden></iframe>
-        <div class="yt-idle" id="ytIdle"><svg viewBox="0 0 28 20"><rect width="28" height="20" rx="5" fill="#ff0033"/><path d="M11 5.5v9l7.5-4.5z" fill="#fff"/></svg><b>YouTube Music</b><span>Tìm bài hát bên dưới. Nút loa: phát ra loa (qua máy chủ nhạc). Nút ▶: xem ngay trên thiết bị này.</span></div>
+        <div class="yt-idle" id="ytIdle"><svg viewBox="0 0 28 20"><rect width="28" height="20" rx="5" fill="#ff0033"/><path d="M11 5.5v9l7.5-4.5z" fill="#fff"/></svg><b>YouTube Music</b><span>Đang mở trình xem trên thiết bị này.</span></div>
       </div>
       <div class="yt-bar">
         <div class="yt-info"><div class="yt-title" id="ytTitle">Chưa chọn video</div><div class="yt-sub" id="ytSub">Phát trên thiết bị này</div></div>
         <button class="mp-btn yt-spk" id="ytSpk" onclick="ytToSpeaker(ytIndex)" aria-label="Phát trên loa" title="Phát trên loa" disabled><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 9.5v5h3.5L12 19V5L7.5 9.5H4z"/><path d="M15 9.2a4 4 0 010 5.6M17.6 6.8a7.5 7.5 0 010 10.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
         <button class="mp-btn" id="ytPrev" onclick="ytStep(-1)" aria-label="Video trước" disabled><svg viewBox="0 0 24 24" fill="currentColor"><path d="M18 6l-8.5 6L18 18V6zM8 6v12H6V6h2z"/></svg></button>
         <button class="mp-btn" id="ytNext" onclick="ytStep(1)" aria-label="Video kế" disabled><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg></button>
+        <button class="mp-btn" id="ytClose" onclick="ytStopWatching()" aria-label="Đóng trình xem" title="Đóng trình xem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
         <a class="mp-btn" id="ytOpen" href="https://www.youtube.com/" target="_blank" rel="noopener" aria-label="Mở trên YouTube" title="Mở trên YouTube"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 01-1 1H5a1 1 0 01-1-1V7a1 1 0 011-1h5"/></svg></a>
       </div>
       <div class="yt-err" id="ytErr" hidden></div>
@@ -1169,6 +1174,7 @@ select:active,select:focus{box-shadow:0 0 0 4px var(--grad-dim);}
       <button class="ms-go" onclick="mediaSearchGo()">Tìm</button>
     </div>
     <div class="radio-row" id="ytRow"><span class="radio-lbl">YouTube</span><div class="radio-chips"><button class="radio-chip yt-chip" id="ytChip" onclick="ytToggle()" aria-pressed="false"><svg viewBox="0 0 28 20" aria-hidden="true"><rect width="28" height="20" rx="5" fill="#ff0033"/><path d="M11 5.5v9l7.5-4.5z" fill="#fff"/></svg><span id="ytChipText">YouTube Music</span></button><span class="yt-now" id="ytNow" hidden></span></div></div>
+    <div class="yt-err yt-msg" id="ytMsg" hidden></div>
     <div class="radio-row" id="radioRow" hidden><span class="radio-lbl">Radio</span><div class="radio-chips" id="radioChips"></div></div>
     <div class="radio-row" id="podRow" hidden><span class="radio-lbl">Podcast</span><div class="radio-chips" id="podChips"></div></div>
   </div>
@@ -2371,7 +2377,7 @@ function radioMark(videoId,state){
 // Each view keeps its own query, so switching back and forth loses nothing.
 let mediaView='music';
 const viewQuery={music:'',yt:'',pod:''};
-const VIEW_HINT={music:'Tên bài hát, ca sĩ, DJ, Mix…',yt:'Tìm trên YouTube, hoặc dán link video…',pod:'Tìm podcast…'};
+const VIEW_HINT={music:'Tên bài hát, ca sĩ, DJ, Mix…',yt:'Tìm bài hát trên YouTube, hoặc dán link…',pod:'Tìm podcast…'};
 function escq(t){return String(t==null?'':t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function setMediaView(v){
   if(v===mediaView){return;}
@@ -2380,9 +2386,9 @@ function setMediaView(v){
   $('mediaSearch').value=viewQuery[v]||'';
   $('mediaSearch').placeholder=VIEW_HINT[v];
   $('mediaClear').hidden=!$('mediaSearch').value;
-  // YouTube takes the speaker player's place: there is no room on a phone for both.
-  $('nowPlaying').hidden=v==='yt';
-  $('ytCard').hidden=v!=='yt';
+  // Songs found on YouTube play on the SPEAKER, so its player stays on screen. Only while a video is
+  // being watched on this device does YouTube's own player take that place (no room for both).
+  ytLayout();
   $('ytChip').classList.toggle('on',v==='yt');
   $('ytChip').setAttribute('aria-pressed',v==='yt'?'true':'false');
   ytNowRender();
@@ -2393,13 +2399,22 @@ function setMediaView(v){
   }else if(v==='yt')ytRender();
   else podRender();
 }
+function ytLayout(){
+  const watch=mediaView==='yt'&&ytWatching;
+  $('nowPlaying').hidden=watch;
+  $('ytCard').hidden=!watch;
+  if(mediaView!=='yt')$('ytMsg').hidden=true;
+}
 function listHead(img,title,sub){
   return `<div class="list-head">${img?`<img src="${escq(img)}" alt="">`:''}<div class="lh-info"><b>${escq(title)}</b><small>${escq(sub)}</small></div><button onclick="setMediaView('music')">Đóng</button></div>`;
 }
 
-// ── YouTube (plays in this browser) ──────────────
-let ytList=[],ytIndex=-1,ytCur=null,ytPlayer=null,ytApiP=null,ytPlaying=false,ytErrTimer=null;
-function ytToggle(){setMediaView(mediaView==='yt'?'music':'yt');if(mediaView==='yt'&&!ytCur)setTimeout(()=>$('mediaSearch').focus(),50);}
+// ── YouTube ──────────────────────────────────────
+// Search YouTube, play on the SPEAKER: the music server (ms.dbrobot.vn, YouTube source) fetches the
+// audio and serves it as MP3, exactly the path a "mở bài …" voice command takes. A second button
+// watches the video here instead, in YouTube's embedded player.
+let ytList=[],ytIndex=-1,ytCur=null,ytPlayer=null,ytApiP=null,ytPlaying=false,ytErrTimer=null,ytWatching=false;
+function ytToggle(){setMediaView(mediaView==='yt'?'music':'yt');if(mediaView==='yt'&&!ytList.length)setTimeout(()=>$('mediaSearch').focus(),50);}
 function ytSave(){try{localStorage.setItem('r1-yt',JSON.stringify({q:viewQuery.yt||$('mediaSearch').value,results:ytList}));}catch(e){}}
 function ytRestore(){try{const j=JSON.parse(localStorage.getItem('r1-yt')||'null');if(j){viewQuery.yt=j.q||'';ytList=Array.isArray(j.results)?j.results:[];}}catch(e){}}
 // "https://youtu.be/ID", "…watch?v=ID", "/shorts/ID", "/embed/ID", "/live/ID", or a bare ID.
@@ -2409,70 +2424,88 @@ function ytIdOf(t){
   const m=t.match(/(?:youtu\.be\/|[?&]v=|\/(?:shorts|embed|live|v)\/)([A-Za-z0-9_-]{11})/);
   return m?m[1]:'';
 }
+const ytVid=id=>'/stream_mp3?id=yt_'+id;   // the song's handle on the music server
+function ytMsg(text,info){const m=$('ytMsg');if(!text){m.hidden=true;return;}m.className='yt-err yt-msg'+(info?' info':'');m.textContent=text;m.hidden=false;}
+// Find and play, as the music search and a voice command do: the best match starts on the speaker
+// straight away, and the rest of the results stay listed (and queued) to pick from.
 async function ytSearch(q){
   const id=/youtu|^[A-Za-z0-9_-]{11}$/.test(q)?ytIdOf(q):'';
-  if(id){ytList=[{id:id,title:'Video từ link',channel:'',duration:'',live:false,thumbnail:'https://i.ytimg.com/vi/'+id+'/mqdefault.jpg'}];ytRender();ytPlayAt(0);return;}
-  $('mediaSpin').hidden=false;$('mediaClear').hidden=true;
-  if(!ytList.length)$('mediaResults').innerHTML=listHead('','YouTube','Đang tìm…');
+  if(id){ytList=[{id:id,title:'Video từ link',channel:'',duration:'',live:false,thumbnail:'https://i.ytimg.com/vi/'+id+'/mqdefault.jpg'}];ytRender();ytToSpeaker(0);return;}
+  $('mediaSpin').hidden=false;$('mediaClear').hidden=true;ytMsg('');
+  if(!ytList.length)$('mediaResults').innerHTML=listHead('','YouTube Music','Đang tìm…');
   try{
     const j=await(await fetch('/api/yt/search?q='+encodeURIComponent(q))).json();
     if(!j.ok)throw new Error(j.error||'');
     ytList=j.results||[];
-    ytSave();ytRender(ytList.length?null:'Không thấy video nào — thử từ khoá khác.');
+    ytSave();ytRender(ytList.length?null:'Không thấy bài nào — thử từ khoá khác.');
+    const first=ytList.findIndex(v=>!v.live);
+    if(first>=0)ytToSpeaker(first);
   }catch(e){
-    ytRender((e.message||'Không tìm được trên YouTube.')+' Có thể dán link video YouTube vào ô tìm kiếm, hoặc mở youtube.com.');
+    ytRender((e.message||'Không tìm được trên YouTube.')+' Có thể dán link video YouTube vào ô tìm kiếm.');
   }finally{$('mediaSpin').hidden=true;$('mediaClear').hidden=!$('mediaSearch').value;}
 }
 function ytRender(err){
   if(mediaView!=='yt')return;
   const el=$('mediaResults');
-  let h=listHead('','YouTube Music','Nút loa: phát ra loa · Nút ▶: xem trên thiết bị này');
-  if(err)h+=`<div class="media-empty">${SVG_WARN}<span>${escq(err)}</span><a class="guide-link" href="https://www.youtube.com/results?search_query=${encodeURIComponent($('mediaSearch').value.trim())}" target="_blank" rel="noopener" style="margin-top:4px"><span><b>Mở trên YouTube</b></span></a></div>`;
-  else if(!ytList.length)h+=`<div class="media-empty">${SVG_NOTE}<span>Nhập tên bài hát rồi bấm Tìm.<br>Hoặc dán link video YouTube.</span></div>`;
+  let h=listHead('','YouTube Music','Chạm ▶ để phát ra loa · nút màn hình để xem trên thiết bị này');
+  if(err)h+=`<div class="media-empty">${SVG_WARN}<span>${escq(err)}</span></div>`;
+  else if(!ytList.length)h+=`<div class="media-empty">${SVG_NOTE}<span>Nhập tên bài hát rồi bấm Tìm — loa phát ngay.<br>Hoặc dán link video YouTube.</span></div>`;
   h+=ytList.map((v,i)=>`
-    <div class="list-item yt-item${ytCur&&ytCur.id===v.id?' playing':''}" data-yt="${escq(v.id)}">
+    <div class="list-item yt-item" data-vid="${escq(ytVid(v.id))}">
       <img class="li-cover" src="${escq(v.thumbnail)}" alt="" loading="lazy">
       <div class="li-info">
         <div class="li-title">${escq(v.title)}</div>
         <div class="li-sub">${v.live?'<span class="li-badge">LIVE</span>':''}${escq(v.channel)}${v.duration?(' · '+escq(v.duration)):''}</div>
       </div>
-      <div class="li-play-wrap yt"><button class="li-play" onclick="ytToSpeaker(${i})" aria-label="Phát trên loa" title="Phát trên loa">${SVG_SPK}</button><button class="li-play ghost" onclick="ytTap(${i})" aria-label="Xem trên thiết bị này" title="Xem trên thiết bị này">${ytCur&&ytCur.id===v.id&&ytPlaying?SVG_PAUSE:SVG_PLAY}</button></div>
+      <button class="li-play ghost yt-watch${ytWatching&&ytCur&&ytCur.id===v.id?' on':''}" onclick="ytWatch(${i})" aria-label="Xem trên thiết bị này" title="Xem trên thiết bị này"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M10 9l4 2-4 2z" fill="currentColor"/><path d="M8 20h8"/></svg></button>
+      <div class="li-play-wrap" data-vid="${escq(ytVid(v.id))}">
+        <svg class="li-ring" viewBox="0 0 40 40"><circle cx="20" cy="20" r="17"/></svg>
+        <button class="li-play" onclick="ytSpeakerTap(${i})" aria-label="Phát ra loa" title="Phát ra loa">${SVG_PLAY}</button>
+      </div>
     </div>`).join('');
   el.innerHTML=h;
+  applyMediaButtonStates();
 }
-function ytTap(i){
+// The speaker button of a row: the song already on the speaker toggles pause, any other starts.
+function ytSpeakerTap(i){
   const v=ytList[i];if(!v)return;
-  if(ytCur&&ytCur.id===v.id&&ytPlayer&&ytPlayer.getPlayerState){
-    try{if(ytPlaying)ytPlayer.pauseVideo();else ytPlayer.playVideo();return;}catch(e){}
-  }
-  ytPlayAt(i);
+  if(mediaState.video_id===ytVid(v.id)&&mediaState.state!=='stopped'&&mediaState.state!=='idle')mediaToggle();
+  else ytToSpeaker(i);
 }
-const SVG_SPK='<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 9.5v5h3.5L12 19V5L7.5 9.5H4z"/><path d="M15 9.2a4 4 0 010 5.6M17.6 6.8a7.5 7.5 0 010 10.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
-// Play on the speaker: the music server fetches the video's audio (yt-dlp) and serves it as MP3, so
-// it plays like any song from the music server. The rest of the results go in as the queue, from
-// the tapped one on, so "next" carries on down the list.
+// Play on the speaker. The rest of the results go in as the queue, from the tapped one on, so
+// "next" carries on down the list (the music server fetches each one when its turn comes).
 let ytSpkBusy=false;
 async function ytToSpeaker(i){
   const v=ytList[i];if(!v||ytSpkBusy)return;
   ytSpkBusy=true;
-  if(ytPlayer&&ytPlaying){try{ytPlayer.pauseVideo();}catch(e){}}
-  clearTimeout(ytErrTimer);
-  $('ytErr').className='yt-err info';$('ytErr').textContent='Đang chuẩn bị “'+(v.title||'video')+'” trên loa…';$('ytErr').hidden=false;
+  if(ytWatching)ytStopWatching();
+  ytMsg('Đang chuẩn bị “'+(v.title||'bài hát')+'” trên loa…',true);
   try{
     const j=await(await fetch('/api/yt/prepare?id='+encodeURIComponent(v.id))).json();
     if(!j.ok)throw new Error(j.error||'Không phát được trên loa.');
-    const from=i,list=ytList.slice(from,from+MEDIA_QUEUE_MAX);
+    const list=ytList.slice(i,i+MEDIA_QUEUE_MAX).filter((x,k)=>k===0||!x.live);
     const items=list.map((x,k)=>({
-      video_id:k===0?j.video_id:'/stream_mp3?id=yt_'+x.id,
+      video_id:k===0?(j.video_id||ytVid(x.id)):ytVid(x.id),
       title:(k===0&&j.title)||x.title||'',artist:(k===0&&j.artist)||x.channel||'YouTube',
       thumbnail:x.thumbnail||'',duration:x.duration||''}));
     await fetch('/api/media/play',{method:'POST',body:JSON.stringify({items:items,start_index:0})});
-    $('ytErr').hidden=true;
-    setMediaView('music');
-    try{$('pmedia').scrollTop=0;}catch(e){}   // show the speaker's player, now playing it
+    ytMsg('');
+    if(mediaPollTimer)mediaPollTick();
   }catch(e){
-    $('ytErr').className='yt-err';$('ytErr').textContent=e.message;$('ytErr').hidden=false;
+    ytMsg(e.message);
   }finally{ytSpkBusy=false;}
+}
+// Watch on this device instead (the speaker is left alone).
+function ytWatch(i){
+  if(ytWatching&&ytCur&&ytList[i]&&ytCur.id===ytList[i].id&&ytPlayer&&ytPlayer.getPlayerState){
+    try{if(ytPlaying)ytPlayer.pauseVideo();else ytPlayer.playVideo();return;}catch(e){}
+  }
+  ytWatching=true;ytLayout();ytPlayAt(i);
+  try{$('pmedia').scrollTop=0;}catch(e){}
+}
+function ytStopWatching(){
+  if(ytPlayer&&ytPlaying){try{ytPlayer.pauseVideo();}catch(e){}}
+  ytWatching=false;ytPlaying=false;ytLayout();ytRender();ytNowRender();
 }
 function ytStep(d){if(ytList.length)ytPlayAt(Math.max(0,Math.min(ytList.length-1,ytIndex+d)));}
 function ytPlayAt(i){
@@ -2481,7 +2514,7 @@ function ytPlayAt(i){
   clearTimeout(ytErrTimer);$('ytErr').hidden=true;
   $('ytIdle').hidden=true;$('ytFrame').hidden=false;
   $('ytTitle').textContent=v.title||'YouTube';
-  $('ytSub').textContent=(v.channel?v.channel+' · ':'')+'phát trên thiết bị này';
+  $('ytSub').textContent=(v.channel?v.channel+' · ':'')+'đang xem trên thiết bị này';
   $('ytOpen').href='https://www.youtube.com/watch?v='+encodeURIComponent(v.id);
   $('ytPrev').disabled=i<=0;$('ytNext').disabled=i>=ytList.length-1;$('ytSpk').disabled=false;
   if(ytPlayer&&ytPlayer.loadVideoById){try{ytPlayer.loadVideoById(v.id);ytRender();ytNowRender();return;}catch(e){ytPlayer=null;}}
@@ -2525,10 +2558,10 @@ function ytError(e){
 }
 // While YouTube plays and another view is open, the YouTube row says what is playing.
 function ytNowRender(){
-  const show=mediaView!=='yt'&&ytCur&&ytPlaying;
+  const show=mediaView!=='yt'&&ytWatching&&ytCur&&ytPlaying;
   $('ytNow').hidden=!show;
   if(show)$('ytNow').textContent='Đang phát: '+(ytCur.title||'');
-  $('ytChipText').textContent=mediaView==='yt'?'Về nhạc trên loa':'YouTube Music';
+  $('ytChipText').textContent=mediaView==='yt'?'Đóng YouTube':'YouTube Music';
 }
 
 // ── Podcasts (play on the speaker, like radio) ───
@@ -3006,7 +3039,7 @@ function restoreMediaSearchState(){
 }
 
 // Typing only updates the clear button. The lookup itself runs on Enter or the Tìm button: the
-// music server answers each one by searching SoundCloud and resolving a stream, which takes
+// music server answers each one by searching YouTube and resolving a stream, which takes
 // seconds and is not something to fire at every pause between keystrokes.
 function onMediaSearchInput(){
   clearTimeout(mediaSearchTimer);

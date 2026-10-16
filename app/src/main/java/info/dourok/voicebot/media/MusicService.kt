@@ -18,7 +18,7 @@ object MusicService {
     private const val LOCAL = "http://127.0.0.1:8088"
     private const val RADIO_PREFIX = "radio:"
 
-    // The music server resolves a song through SoundCloud before it answers, hence the long read --
+    // The music server resolves a song through YouTube (yt-dlp) before it answers, hence the long read --
     // but shorter than the 30 s a xiaozhi server waits for a tool before giving up on it.
     private val http = OkHttpClient.Builder()
         .connectTimeout(8, TimeUnit.SECONDS)

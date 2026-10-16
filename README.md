@@ -265,14 +265,15 @@ loa (bật bằng nút bấm); DB-Robot không tự phát Wi-Fi, nó chỉ làm 
 
 ## Máy chủ nhạc
 
-Tab Media phát nhạc từ một máy chủ nhạc qua HTTP. Mặc định là `https://ms.dbrobot.vn`; thẻ **Máy
-chủ nhạc** trong tab System có ô nhập cho máy chủ riêng. Máy chủ cần hai địa chỉ:
+Tab Media và lệnh "mở bài …" phát nhạc từ một máy chủ nhạc qua HTTP. Mặc định là
+`https://ms.dbrobot.vn`, lấy nhạc từ **YouTube** (yt-dlp, mã nguồn ở thư mục `youtube-music` của
+chủ dự án); thẻ **Máy chủ nhạc** trong tab System có ô nhập cho máy chủ riêng. Máy chủ cần các địa chỉ:
 
 | Địa chỉ | Trả về |
 |---|---|
-| `GET /stream_pcm?song=<tên bài>` | JSON `{"success":true,"title":…,"artist":…,"thumbnail":…,"audio_url":"/stream_mp3?id=…"}` |
+| `GET /stream_pcm?song=<tên bài>` | Bài khớp nhất: JSON `{"success":true,"title":…,"artist":…,"thumbnail":…,"audio_url":"/stream_mp3?id=…"}` |
 | `GET <audio_url>` | Luồng MP3 của bài hát |
-| `GET /youtube?id=<mã video>` | (để phát YouTube ra loa) JSON như trên, `audio_url` = `/stream_mp3?id=yt_<mã>` |
+| `GET /youtube?id=<mã video>` | Chuẩn bị một video đã chọn trên trang điều khiển; JSON như trên, `audio_url` = `/stream_mp3?id=yt_<mã>` |
 
 Loa tự giải mã và phát MP3, nên nhạc không đi qua đường thoại của trợ lý.
 
@@ -281,18 +282,17 @@ Loa tự giải mã và phát MP3, nên nhạc không đi qua đường thoại 
 Hai hàng mới trong tab Media, ngay trên và dưới hàng Radio:
 
 - **YouTube** — bấm **YouTube Music**: ô tìm kiếm chuyển sang tìm trên YouTube (dán link video cũng
-  được). Mỗi kết quả có hai nút:
-  - **Nút loa — phát ra loa.** Máy chủ nhạc lấy âm thanh của video, đổi sang MP3 rồi loa phát như
-    một bài hát thường; các kết quả phía sau thành danh sách phát tiếp. Cần máy chủ nhạc DB-Robot
-    bản có `/youtube` (xem [Máy chủ nhạc](#máy-chủ-nhạc)). Trên máy chủ DB-Robot, máy chủ nhạc
-    công khai chỉ là cầu nối: nó chuyển yêu cầu qua mạng Docker nội bộ tới một máy chủ YouTube
-    riêng không mở ra Internet (biến `YT_BACKEND`), và tự lấy bằng yt-dlp khi máy chủ đó không trả lời.
-  - **Nút ▶ — xem trên thiết bị này.** Trình phát nhúng của YouTube thế chỗ trình phát của loa;
-    hết video thì tự sang video kế. Phát **trên điện thoại hoặc máy tính đang mở trang**, không cần
-    máy chủ nhạc. Loa chỉ làm hộ việc tìm kiếm (trình duyệt không được phép tự
-  hỏi YouTube), xem `media/YouTubeSearch.java`. Một số video bị chủ kênh chặn phát nhúng; khi đó
-  trang báo lỗi, có nút mở trên YouTube và tự chuyển sang video kế. Bấm **Về nhạc trên loa** để quay
-  lại; video đang phát vẫn tiếp tục.
+  được). Bấm **Tìm** là loa phát ngay bài khớp nhất, như khi ra lệnh "mở bài …"; các kết quả còn
+  lại hiện bên dưới và nằm trong danh sách phát tiếp. Mỗi kết quả có hai nút:
+  - **▶ — phát ra loa** (bấm lần nữa để tạm dừng). Máy chủ nhạc lấy âm thanh của video và đổi sang
+    MP3, đúng đường của lệnh phát nhạc bằng giọng nói.
+  - **Nút màn hình — xem trên thiết bị này.** Trình phát nhúng của YouTube thế chỗ trình phát của
+    loa cho tới khi bấm ✕; hết video thì tự sang video kế. Phát trên điện thoại hoặc máy tính đang
+    mở trang, loa không bị đụng tới. Một số video bị chủ kênh chặn phát nhúng; khi đó trang báo lỗi
+    và có nút mở trên YouTube.
+
+  Việc tìm kiếm do loa làm hộ (trình duyệt không được phép tự hỏi YouTube), xem
+  `media/YouTubeSearch.java`.
 - **Podcast** — chạm một chương trình là loa phát tập mới nhất, như chạm một kênh radio; danh sách
   60 tập gần nhất hiện bên dưới để chọn tập khác, và nút Bài kế đi lần lượt các tập cũ hơn. **Tìm
   podcast** tìm trong danh bạ Apple Podcasts (miễn phí, không cần tài khoản). Mỗi chương trình được

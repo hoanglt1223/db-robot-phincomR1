@@ -5,7 +5,8 @@ và vào ô "Bản mới nhất" trong trang điều khiển của loa -- viết
 
 ## v1.5.13
 
-- **Phát YouTube ra loa**: mỗi kết quả YouTube có thêm nút loa — chạm là loa phát bài đó (các kết quả sau thành danh sách phát tiếp), như nhạc từ máy chủ nhạc. Nút ▶ vẫn xem video ngay trên điện thoại. Cần máy chủ nhạc DB-Robot bản mới (có YouTube).
+- **Máy chủ nhạc DB-Robot chuyển sang nguồn YouTube**: lệnh "mở bài …", ô tìm nhạc và YouTube Music cùng lấy nhạc từ YouTube.
+- **YouTube Music phát ra loa**: bấm Tìm là loa phát ngay bài khớp nhất, như khi ra lệnh bằng giọng nói; các kết quả khác hiện bên dưới để chọn và phát tiếp. Nút màn hình để xem video ngay trên điện thoại.
 - **Podcast tin tức trong nước**: bỏ "Thời sự RFI", thêm **Thời sự VOV**, **VnExpress Hôm nay** và **Podcast VietNamNet**.
 
 ## v1.5.12
