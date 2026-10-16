@@ -207,25 +207,25 @@ class ControlServer @Inject constructor(
             // without one these go to the xiaozhi server over the voice channel, as upstream.
             "/api/media/seek" -> {
                 param(session, "position_s").toIntOrNull()?.let {
-                    if (localMusic()) LocalMusicPlayer.seekTo(it)
+                    if (onDevice()) LocalMusicPlayer.seekTo(it)
                     else MediaCommands.flow.tryEmit(MediaCommands.Command.Seek(it))
                 }
                 json("""{"ok":true}""")
             }
             "/api/media/next" -> {
-                if (localMusic()) LocalMusicPlayer.next() else MediaCommands.flow.tryEmit(MediaCommands.Command.Next)
+                if (onDevice()) LocalMusicPlayer.next() else MediaCommands.flow.tryEmit(MediaCommands.Command.Next)
                 json("""{"ok":true}""")
             }
             "/api/media/pause" -> {
-                if (localMusic()) LocalMusicPlayer.pause() else MediaCommands.flow.tryEmit(MediaCommands.Command.Pause)
+                if (onDevice()) LocalMusicPlayer.pause() else MediaCommands.flow.tryEmit(MediaCommands.Command.Pause)
                 json("""{"ok":true}""")
             }
             "/api/media/resume" -> {
-                if (localMusic()) LocalMusicPlayer.resume() else MediaCommands.flow.tryEmit(MediaCommands.Command.Resume)
+                if (onDevice()) LocalMusicPlayer.resume() else MediaCommands.flow.tryEmit(MediaCommands.Command.Resume)
                 json("""{"ok":true}""")
             }
             "/api/media/stop" -> {
-                if (localMusic()) LocalMusicPlayer.stop() else MediaCommands.flow.tryEmit(MediaCommands.Command.Stop)
+                if (onDevice()) LocalMusicPlayer.stop() else MediaCommands.flow.tryEmit(MediaCommands.Command.Stop)
                 json("""{"ok":true}""")
             }
             "/api/media/state" -> json(buildMediaState())
@@ -270,6 +270,19 @@ class ControlServer @Inject constructor(
             // Internet radio: the station list for the panel, play by key, and the relay the
             // on-device player reads the stream through (see MusicService.radioTrack).
             "/api/radio/stations" -> json(buildRadioStations())
+            // YouTube in the panel: the search runs here (a web page cannot ask YouTube itself),
+            // the video plays in YouTube's embedded player on the phone -- see YouTubeSearch.
+            "/api/yt/search" -> json(info.dourok.voicebot.media.YouTubeSearch.searchJson(param(session, "q")))
+            // Podcasts: the built-in list, Apple's directory for search, a show's episodes, and
+            // the relay the on-device player reads an episode through (see Podcasts).
+            "/api/podcast/shows" -> json(buildPodcastShows())
+            "/api/podcast/search" -> json(info.dourok.voicebot.media.Podcasts.searchJson(param(session, "q"), userAgent()))
+            "/api/podcast/episodes" -> json(
+                info.dourok.voicebot.media.Podcasts.episodesJson(
+                    param(session, "show"), param(session, "apple").toLongOrNull() ?: 0L, userAgent()
+                )
+            )
+            "/podcast/stream" -> servePodcastStream(session)
             "/api/radio/play" -> json(handleRadioPlay(param(session, "id")))
             "/radio/stream" -> serveRadioStream(param(session, "id"))
             // Where the speaker is: city search, the chosen place, local time and weather there.
@@ -587,6 +600,11 @@ class ControlServer @Inject constructor(
 
     /** True when the Media tab should search and play through the music server on this device. */
     private fun localMusic(): Boolean = Settings.musicUrl.isNotBlank()
+
+    /** Whether the panel's transport buttons drive this device's own player (see isLoaded). */
+    private fun onDevice(): Boolean = localMusic() || LocalMusicPlayer.isLoaded
+
+    private fun userAgent(): String = "db-robot-r1/$appVersion"
 
     // The music server searches and resolves the stream before it answers, which takes far longer
     // than the 15s the shared client allows.
@@ -930,6 +948,18 @@ class ControlServer @Inject constructor(
         val items = root.optJSONArray("items")
             ?: return """{"ok":false,"error":"items must be a JSON array"}"""
         if (items.length() == 0) return """{"ok":false,"error":"empty items"}"""
+        // A podcast list always plays here: its episodes come through this device's own relay.
+        val first = items.optJSONObject(0)?.optString("video_id", "").orEmpty()
+        if (first.startsWith(info.dourok.voicebot.media.Podcasts.ID_PREFIX)) {
+            val tracks = ArrayList<LocalMusicPlayer.Track>()
+            for (i in 0 until items.length()) {
+                val it = items.optJSONObject(i) ?: continue
+                podcastTrack(it)?.let { t -> tracks.add(t) }
+            }
+            if (tracks.isEmpty()) return """{"ok":false,"error":"Danh sách tập đã cũ, mở lại podcast."}"""
+            LocalMusicPlayer.play(tracks, root.optInt("start_index", 0).coerceIn(0, tracks.size - 1))
+            return """{"ok":true}"""
+        }
         if (localMusic()) {
             val base = musicBase()
             val tracks = ArrayList<LocalMusicPlayer.Track>()
@@ -941,6 +971,10 @@ class ControlServer @Inject constructor(
                 val station = info.dourok.voicebot.media.MusicService.stationOf(id)
                 if (station != null) {
                     tracks.add(info.dourok.voicebot.media.MusicService.radioTrack(station))
+                    continue
+                }
+                if (id.startsWith(info.dourok.voicebot.media.Podcasts.ID_PREFIX)) {
+                    podcastTrack(it)?.let { t -> tracks.add(t) }
                     continue
                 }
                 tracks.add(
@@ -1090,6 +1124,68 @@ class ControlServer @Inject constructor(
             arr.put(JSONObject().put("id", it.key).put("name", it.name).put("short", it.shortName))
         }
         return JSONObject().put("ok", true).put("stations", arr).toString()
+    }
+
+    private fun buildPodcastShows(): String {
+        val arr = JSONArray()
+        info.dourok.voicebot.media.Podcasts.all().forEach {
+            arr.put(JSONObject().put("id", it.key).put("name", it.name).put("short", it.shortName))
+        }
+        return JSONObject().put("ok", true).put("shows", arr).toString()
+    }
+
+    /** A podcast episode from the panel's list, if its token still names an address read here. */
+    private fun podcastTrack(item: JSONObject): LocalMusicPlayer.Track? {
+        val id = item.optString("video_id", "")
+        val token = id.removePrefix(info.dourok.voicebot.media.Podcasts.ID_PREFIX)
+        if (info.dourok.voicebot.media.Podcasts.urlOf(token) == null) return null
+        return LocalMusicPlayer.Track(
+            id = id,
+            title = item.optString("title", ""),
+            artist = item.optString("artist", ""),
+            thumbnail = item.optString("thumbnail", ""),
+            duration = item.optString("duration", ""),
+            url = "http://127.0.0.1:$PORT/podcast/stream?t=$token",
+        )
+    }
+
+    /**
+     * One podcast episode for the on-device player, read over https with the app's own root
+     * certificates and handed on over local http. The player's Range header is passed through and
+     * the answer's range headers passed back, so seeking works and an .m4a whose index is at the
+     * end of the file can start. Only addresses read from a feed can be asked for (Podcasts.urlOf).
+     */
+    private fun servePodcastStream(session: IHTTPSession): Response {
+        val url = info.dourok.voicebot.media.Podcasts.urlOf(param(session, "t"))
+            ?: return newFixedLengthResponse(Response.Status.NOT_FOUND, "text/plain", "unknown episode")
+        val headers = HashMap<String, String>()
+        headers["User-Agent"] = userAgent()
+        session.headers["range"]?.let { headers["Range"] = it }
+        return try {
+            val c = info.dourok.voicebot.net.Https.get(url, headers)
+            val code = c.responseCode
+            if (code !in 200..299) {
+                c.disconnect()
+                AppLog.e("Podcast: máy chủ trả HTTP $code")
+                return newFixedLengthResponse(Response.Status.lookup(code) ?: Response.Status.INTERNAL_ERROR, "text/plain", "upstream $code")
+            }
+            val type = c.contentType?.takeIf { it.startsWith("audio/") } ?: "audio/mpeg"
+            val stream = object : java.io.FilterInputStream(c.inputStream) {
+                override fun close() {
+                    try { super.close() } finally { c.disconnect() }
+                }
+            }
+            val status = if (code == 206) Response.Status.PARTIAL_CONTENT else Response.Status.OK
+            val length = c.getHeaderField("Content-Length")?.trim()?.toLongOrNull() ?: -1L
+            val resp = if (length >= 0) newFixedLengthResponse(status, type, stream, length)
+                else NanoHTTPD.newChunkedResponse(status, type, stream)
+            resp.addHeader("Accept-Ranges", "bytes")
+            c.getHeaderField("Content-Range")?.let { resp.addHeader("Content-Range", it) }
+            resp
+        } catch (e: Exception) {
+            AppLog.e("Podcast: không mở được tập (${e.message})")
+            newFixedLengthResponse(Response.Status.INTERNAL_ERROR, "text/plain", "stream error")
+        }
     }
 
     private fun handleRadioPlay(id: String): String {

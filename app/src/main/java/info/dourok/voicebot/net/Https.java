@@ -108,6 +108,71 @@ public final class Https {
         throw new IOException("chuyển hướng quá nhiều lần");
     }
 
+    /**
+     * POST {@code body} to {@code url} with the same trust settings as {@link #get}. Redirects are
+     * not followed: the APIs this is used for answer in place. The caller checks the response code
+     * and must {@code disconnect()} the result.
+     */
+    public static HttpURLConnection post(String url, Map<String, String> headers, byte[] body) throws IOException {
+        HttpURLConnection c = (HttpURLConnection) new URL(url).openConnection();
+        if (c instanceof HttpsURLConnection) {
+            SSLSocketFactory f = socketFactory();
+            if (f != null) {
+                ((HttpsURLConnection) c).setSSLSocketFactory(f);
+            }
+        }
+        c.setInstanceFollowRedirects(false);
+        c.setConnectTimeout(CONNECT_TIMEOUT_MS);
+        c.setReadTimeout(READ_TIMEOUT_MS);
+        c.setUseCaches(false);
+        c.setDoOutput(true);
+        c.setRequestMethod("POST");
+        if (headers != null) {
+            for (Map.Entry<String, String> h : headers.entrySet()) {
+                c.setRequestProperty(h.getKey(), h.getValue());
+            }
+        }
+        c.setFixedLengthStreamingMode(body.length);
+        java.io.OutputStream out = c.getOutputStream();
+        try {
+            out.write(body);
+        } finally {
+            out.close();
+        }
+        c.getResponseCode();
+        return c;
+    }
+
+    /**
+     * The whole body of a response as text, at most {@code maxBytes} of it. Throws when the server
+     * did not answer 2xx. Always disconnects.
+     */
+    public static String readText(HttpURLConnection c, int maxBytes) throws IOException {
+        try {
+            int code = c.getResponseCode();
+            if (code < 200 || code > 299) {
+                throw new IOException("HTTP " + code);
+            }
+            InputStream in = c.getInputStream();
+            try {
+                java.io.ByteArrayOutputStream buf = new java.io.ByteArrayOutputStream();
+                byte[] chunk = new byte[16384];
+                int n;
+                while ((n = in.read(chunk)) > 0) {
+                    buf.write(chunk, 0, n);
+                    if (buf.size() > maxBytes) {
+                        throw new IOException("phản hồi quá lớn");
+                    }
+                }
+                return new String(buf.toByteArray(), StandardCharsets.UTF_8);
+            } finally {
+                in.close();
+            }
+        } finally {
+            c.disconnect();
+        }
+    }
+
     /** The factory that trusts system roots plus the bundle; null if there is no usable bundle. */
     static SSLSocketFactory socketFactory() {
         synchronized (LOCK) {

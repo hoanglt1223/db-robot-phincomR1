@@ -30,6 +30,10 @@ màn hình.
 - **Ra lệnh bằng giọng nói** — "mở bài Nơi này có anh", "tăng âm lượng lên 70", "mở VOV giao
   thông Hà Nội", "dừng nhạc" (xem [Lệnh giọng nói](#lệnh-giọng-nói)).
 - **Radio** — 8 kênh VOV, mở bằng giọng nói hoặc bấm trong tab Media.
+- **Podcast** — 13 chương trình podcast miễn phí bằng tiếng Việt và tiếng Anh, chạm là loa phát
+  tập mới nhất; tìm thêm podcast khác ngay trong tab Media.
+- **YouTube Music** — tìm và xem video, nghe nhạc YouTube ngay trên trang điều khiển, không cần
+  máy chủ nhạc (phát trên điện thoại / máy tính đang mở trang, không phát ra loa).
 - **Tắt nghe và gọi loa bằng tay** — hai nút trên trang điều khiển để tắt từ đánh thức khi
   không muốn loa xen vào (lúc nghe nhạc, xem tivi) và gọi loa khi cần.
 - **Nghe nhạc** — tìm bài hát và phát ngay trên loa, có quang phổ theo nhạc, thanh âm lượng, nút
@@ -114,7 +118,7 @@ Hướng dẫn từng bước và cách xử lý trục trặc: [install/HUONG_D
 |---|---|
 | **Settings** | Âm lượng và độ to · Equalizer · Nguồn mic · Khuếch đại mic (AGC) · Kiểm tra mic · Đèn LED · Định dạng âm thanh |
 | **System** | Server · Máy chủ nhạc · Vị trí & thời tiết · Wi-Fi · Bluetooth · AI Model · Home Assistant · Wake word · Cập nhật phần mềm · Khởi động lại ứng dụng |
-| **Media** | Trình phát nhạc, quang phổ, âm lượng, ô tìm bài hát, hàng nút kênh radio |
+| **Media** | Trình phát nhạc, quang phổ, âm lượng, ô tìm bài hát; hàng YouTube, Radio, Podcast |
 
 Hai nút nổi ở góc dưới bên phải mở khung **Chat** (gõ chữ thay cho nói, xem lại hội thoại) và
 **Log** (nhật ký hoạt động của loa). Hai nút ở góc dưới bên trái là **Tắt nghe** và **Gọi loa**
@@ -155,6 +159,10 @@ DB-Robot nói chuyện với máy chủ theo giao thức [xiaozhi](https://githu
 | **DB-Robot** (mặc định) | `https://sv1.dbrobot.vn/xiaozhi/ota/` | 16 kHz mono |
 | **Xiaozhi** | `https://api.tenclass.net/xiaozhi/ota/` | 24 kHz mono |
 | **Tuỳ chỉnh** | OTA URL của máy chủ xiaozhi-esp32-server của bạn | chỉnh ở tab Settings → Hệ thống |
+
+Cách tạo tài khoản và gắn loa vào máy chủ DB-Robot (đăng nhập Console, lấy mã 6 số, thêm loa):
+[Hướng dẫn kết nối máy chủ DB-Robot](https://dbrobot.vn/huongdan.html#huong-dan-console) — link
+này cũng có ở cuối thẻ Server trên trang điều khiển.
 
 Bấm một trong hai máy chủ có sẵn là kết nối ngay và loa tự đặt đúng định dạng âm thanh. Với máy chủ
 tuỳ chỉnh, tốc độ lấy mẫu và số kênh ở tab Settings phải khớp với định dạng máy chủ gửi về; trang
@@ -267,6 +275,28 @@ chủ nhạc** trong tab System có ô nhập cho máy chủ riêng. Máy chủ 
 
 Loa tự giải mã và phát MP3, nên nhạc không đi qua đường thoại của trợ lý.
 
+## YouTube và Podcast
+
+Hai hàng mới trong tab Media, ngay trên và dưới hàng Radio:
+
+- **YouTube** — bấm **YouTube Music**: trình phát nhúng của YouTube thế chỗ trình phát của loa, ô
+  tìm kiếm chuyển sang tìm trên YouTube (dán link video cũng được). Chạm một kết quả để phát; hết
+  video thì tự sang video kế. Video phát **trên điện thoại hoặc máy tính đang mở trang**, không phát
+  ra loa và không cần máy chủ nhạc. Loa chỉ làm hộ việc tìm kiếm (trình duyệt không được phép tự
+  hỏi YouTube), xem `media/YouTubeSearch.java`. Một số video bị chủ kênh chặn phát nhúng; khi đó
+  trang báo lỗi, có nút mở trên YouTube và tự chuyển sang video kế. Bấm **Về nhạc trên loa** để quay
+  lại; video đang phát vẫn tiếp tục.
+- **Podcast** — chạm một chương trình là loa phát tập mới nhất, như chạm một kênh radio; danh sách
+  60 tập gần nhất hiện bên dưới để chọn tập khác, và nút Bài kế đi lần lượt các tập cũ hơn. **Tìm
+  podcast** tìm trong danh bạ Apple Podcasts (miễn phí, không cần tài khoản). Mỗi chương trình được
+  ghi bằng mã Apple Podcasts nên khi chương trình đổi nơi lưu trữ, loa vẫn tìm được địa chỉ mới.
+  Tập podcast được loa tải qua chứng chỉ gốc riêng của ứng dụng rồi chuyển cho trình phát trên máy,
+  có hỗ trợ tua (`media/Podcasts.java`, `/podcast/stream`).
+
+Chương trình có sẵn: Tri Kỷ Cảm Xúc, Have A Sip, Giang ơi Radio, Đọc truyện đêm khuya (Đài Hà
+Nội), Chương trình 60' (RFI Tiếng Việt), 5 Phút Chuyện Thị Trường, Spiderum, HIEU.TV, Better
+Version, Minh Niệm, Vì sao thế nhỉ!, Kho truyện cổ tích, 6 Minute English (BBC).
+
 ## Cập nhật phần mềm
 
 Loa đọc tệp `update.json` của bản phát hành mới nhất trên GitHub vài giờ một lần. (Android 5.1 của
@@ -310,6 +340,7 @@ Bản release là bản để chạy trên loa (đã tối ưu bằng R8). `appl
 | `…/voicebot/media/LocalMusicPlayer.kt` | Phát nhạc từ máy chủ nhạc, lấy quang phổ |
 | `…/voicebot/weather/` | Vị trí, múi giờ, thời tiết (`Weather.java`, `LocationManager.kt`) |
 | `…/voicebot/mcp/` | Công cụ MCP cho trợ lý (`DeviceMcp.java`, `DeviceTools.kt`) |
+| `…/voicebot/media/Podcasts.java`, `YouTubeSearch.java` | Danh sách podcast, đọc RSS, chuyển tập cho trình phát; tìm video YouTube cho trang điều khiển |
 | `…/voicebot/media/RadioStations.java`, `HlsAudioStream.java`, `MusicService.kt` | Danh sách kênh radio, đọc luồng HLS của đài; phát nhạc/radio theo lệnh giọng nói |
 | `…/voicebot/domain/voice/VoiceGate.kt` | Tắt nghe từ đánh thức và gọi loa từ trang điều khiển |
 | `…/voicebot/net/Https.java` | Kết nối https với danh sách chứng chỉ gốc đi kèm ứng dụng |

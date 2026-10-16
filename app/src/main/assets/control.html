@@ -536,6 +536,15 @@ select::-ms-expand{display:none;}
   background:var(--card);text-align:center;}
 .about-brand{display:flex;align-items:center;justify-content:center;gap:10px;font-size:15px;font-weight:800;letter-spacing:.4px;}
 .about p{font-size:11.5px;color:var(--mut);line-height:1.55;margin:7px auto 11px;max-width:330px;}
+/* A guide on dbrobot.vn, at the foot of a card (Server). */
+.guide-link{display:flex;align-items:center;gap:10px;margin:10px 0 2px;padding:10px 12px;border-radius:12px;
+  border:1px solid var(--line);background:var(--card2);color:var(--fg);text-decoration:none;}
+.guide-link:active{background:var(--grad-dim);}
+.guide-link>svg{width:20px;height:20px;color:var(--a1);flex-shrink:0;}
+.guide-link span{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
+.guide-link b{font-size:13px;font-weight:650;}
+.guide-link small{font-size:11px;color:var(--mut);line-height:1.4;}
+.guide-link .gl-go{width:16px;height:16px;color:var(--mut);}
 .about-links{display:flex;flex-wrap:wrap;justify-content:center;gap:7px;}
 .about-links a{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:18px;
   border:1px solid var(--line);background:var(--card2);color:var(--fg);font-size:12px;font-weight:600;text-decoration:none;}
@@ -614,6 +623,9 @@ select::-ms-expand{display:none;}
 /* Pane is a column: head (player + search) pinned, list scrolls under it. */
 .media-head{flex-shrink:0;}
 .media-scroll{flex:1;overflow-y:auto;min-height:0;padding:0 13px var(--fab-clear);}
+/* On a phone the player, search and the YouTube / Radio / Podcast rows fill the screen and would
+   leave the list a sliver, so there the whole tab scrolls as one instead of pinning the top. */
+@media (max-height:940px){#pmedia .media-scroll{flex:none;overflow:visible;min-height:auto;}}
 /* --ms-pad is the container's own horizontal padding; the overlaid icons offset from it so they
    keep the same inset INSIDE the input no matter what padding the container runs. The Home
    Assistant search reuses this block with padding:0 and, while the offsets were hardcoded for
@@ -701,6 +713,42 @@ select::-ms-expand{display:none;}
 .ms-field{--ms-pad:0px;position:relative;display:flex;align-items:center;flex:1;min-width:0;}
 .ms-go{flex-shrink:0;height:38px;padding:0 16px;border:0;border-radius:9px;background:var(--grad);color:#fff;
   font:700 12px/1 inherit;letter-spacing:.6px;text-transform:uppercase;cursor:pointer;}
+
+/* ── YOUTUBE (Media tab) — plays in this browser, not on the speaker ── */
+.yt-card[hidden]{display:none;}
+.yt-stage{position:relative;width:100%;max-width:560px;margin:0 auto;aspect-ratio:16/9;border-radius:10px;overflow:hidden;
+  background:#000;border:1px solid var(--line);}
+.yt-stage iframe{position:absolute;inset:0;width:100%;height:100%;border:0;}
+.yt-stage iframe[hidden],.yt-idle[hidden]{display:none;}
+.yt-idle{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+  padding:14px 18px;text-align:center;color:#e8eaf2;background:radial-gradient(circle at 50% 35%,#2a1220,#0b0d16 70%);}
+.yt-idle svg{width:46px;height:33px;}
+.yt-idle b{font-size:14px;}
+.yt-idle span{font-size:11.5px;line-height:1.5;color:#aab0c4;max-width:330px;}
+.yt-bar{display:flex;align-items:center;gap:8px;margin-top:9px;}
+.yt-info{flex:1;min-width:0;}
+.yt-title{font-size:13.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.yt-sub{font-size:11px;color:var(--mut);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.yt-bar .mp-btn{width:36px;height:36px;flex-shrink:0;text-decoration:none;}
+.yt-bar .mp-btn svg{width:16px;height:16px;}
+.yt-err{margin-top:8px;font-size:11.5px;color:var(--err);line-height:1.45;}
+.yt-err[hidden]{display:none;}
+.yt-err a{color:var(--a1);font-weight:600;}
+.radio-chip.yt-chip{display:inline-flex;align-items:center;gap:6px;}
+.yt-chip svg{width:17px;height:12px;flex-shrink:0;}
+.yt-now{flex-shrink:0;align-self:center;max-width:52vw;font-size:11px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.yt-now[hidden]{display:none;}
+.list-item.yt-item .li-cover{width:72px;height:41px;border-radius:6px;}
+.li-badge{display:inline-block;margin-right:5px;padding:0 5px;border-radius:4px;background:#e11d48;color:#fff;font-size:9.5px;font-weight:700;letter-spacing:.4px;vertical-align:1px;}
+/* The list's own heading in YouTube / podcast views: what it is, and the way back to songs. */
+.list-head{display:flex;align-items:center;gap:10px;padding:10px 4px 8px;border-bottom:1px solid var(--line);}
+.list-head img{width:52px;height:52px;border-radius:10px;object-fit:cover;background:var(--card2);flex-shrink:0;}
+.list-head .lh-info{flex:1;min-width:0;}
+.list-head b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.list-head small{display:block;font-size:11px;color:var(--mut);margin-top:2px;line-height:1.4;}
+.list-head button{flex-shrink:0;height:32px;padding:0 12px;border-radius:16px;border:1px solid var(--line);background:var(--card2);
+  color:var(--fg);font:600 12px/1 inherit;cursor:pointer;}
+.list-item.pod-show{cursor:pointer;}
 
 /* Search / empty states in the list area */
 .media-empty{margin:28px auto;color:var(--mut);text-align:center;font-size:13px;line-height:1.8;
@@ -928,6 +976,7 @@ select:active,select:focus{box-shadow:0 0 0 4px var(--grad-dim);}
       <div class="row"><label>Mã thiết bị</label><span class="hint" id="devId" style="flex:1;-webkit-user-select:text;user-select:text">—</span></div>
       <div class="hint" id="actBox" hidden style="margin:2px 0 8px;color:var(--a1);font-weight:600;-webkit-user-select:text;user-select:text"></div>
       <div class="hint">Bấm DB-Robot hoặc Xiaozhi là kết nối ngay. Máy chủ khác: nhập OTA URL vào ô Tuỳ chỉnh rồi bấm Save.</div>
+      <a class="guide-link" href="https://dbrobot.vn/huongdan.html#huong-dan-console" target="_blank" rel="noopener"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 4.5c2.2-.9 4.4-.9 6.5.6 2.1-1.5 4.3-1.5 6.5-.6v10.6c-2.2-.9-4.4-.9-6.5.6-2.1-1.5-4.3-1.5-6.5-.6z"/><path d="M10 5.1v10.6"/></svg><span><b>Hướng dẫn kết nối máy chủ DB-Robot</b><small>Đăng nhập Console, lấy mã 6 số, gắn loa vào tài khoản</small></span><svg class="gl-go" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5l5 5-5 5"/></svg></a>
     </div>
 
     <div class="card">
@@ -1089,6 +1138,21 @@ select:active,select:focus{box-shadow:0 0 0 4px var(--grad-dim);}
         <button class="mp-btn" id="npNext" onclick="mediaNext()" aria-label="Bài kế" disabled><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg></button>
       </div>
     </div>
+    <!-- YouTube: plays HERE, in YouTube's own embedded player, on the phone/computer showing this
+         page; the speaker is not involved. Shown in place of the speaker's player in YouTube view. -->
+    <div id="ytCard" class="mp yt-card" hidden>
+      <div class="yt-stage">
+        <iframe id="ytFrame" title="Trình phát YouTube" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin" hidden></iframe>
+        <div class="yt-idle" id="ytIdle"><svg viewBox="0 0 28 20"><rect width="28" height="20" rx="5" fill="#ff0033"/><path d="M11 5.5v9l7.5-4.5z" fill="#fff"/></svg><b>YouTube Music</b><span>Tìm bài hát bên dưới rồi chạm để phát. Video phát trên chính thiết bị đang mở trang này, không phát ra loa.</span></div>
+      </div>
+      <div class="yt-bar">
+        <div class="yt-info"><div class="yt-title" id="ytTitle">Chưa chọn video</div><div class="yt-sub" id="ytSub">Phát trên thiết bị này</div></div>
+        <button class="mp-btn" id="ytPrev" onclick="ytStep(-1)" aria-label="Video trước" disabled><svg viewBox="0 0 24 24" fill="currentColor"><path d="M18 6l-8.5 6L18 18V6zM8 6v12H6V6h2z"/></svg></button>
+        <button class="mp-btn" id="ytNext" onclick="ytStep(1)" aria-label="Video kế" disabled><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg></button>
+        <a class="mp-btn" id="ytOpen" href="https://www.youtube.com/" target="_blank" rel="noopener" aria-label="Mở trên YouTube" title="Mở trên YouTube"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 01-1 1H5a1 1 0 01-1-1V7a1 1 0 011-1h5"/></svg></a>
+      </div>
+      <div class="yt-err" id="ytErr" hidden></div>
+    </div>
     <div class="media-search has-go">
       <div class="ms-field">
         <svg class="ms-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>
@@ -1098,7 +1162,9 @@ select:active,select:focus{box-shadow:0 0 0 4px var(--grad-dim);}
       </div>
       <button class="ms-go" onclick="mediaSearchGo()">Tìm</button>
     </div>
+    <div class="radio-row" id="ytRow"><span class="radio-lbl">YouTube</span><div class="radio-chips"><button class="radio-chip yt-chip" id="ytChip" onclick="ytToggle()" aria-pressed="false"><svg viewBox="0 0 28 20" aria-hidden="true"><rect width="28" height="20" rx="5" fill="#ff0033"/><path d="M11 5.5v9l7.5-4.5z" fill="#fff"/></svg><span id="ytChipText">YouTube Music</span></button><span class="yt-now" id="ytNow" hidden></span></div></div>
     <div class="radio-row" id="radioRow" hidden><span class="radio-lbl">Radio</span><div class="radio-chips" id="radioChips"></div></div>
+    <div class="radio-row" id="podRow" hidden><span class="radio-lbl">Podcast</span><div class="radio-chips" id="podChips"></div></div>
   </div>
   <div id="mediaScroll" class="media-scroll">
     <div id="mediaResults"></div>
@@ -1156,7 +1222,7 @@ const set=(k,v)=>fetch(`/api/set?key=${k}&value=${encodeURIComponent(v)}`,{metho
 function restart(){if(confirm('Restart app?'))fetch('/api/restart',{method:'POST'});}
 function tab(t){['set','setup','media'].forEach(x=>{$('p'+x).classList.toggle('on',x===t);$('t'+x).classList.toggle('on',x===t);});
   try{localStorage.setItem('r1-tab',t);}catch(e){}
-  if(t==='media'){mediaPollStart();radioLoad();}else mediaPollStop();
+  if(t==='media'){mediaPollStart();radioLoad();podLoad();}else mediaPollStop();
   // Bluetooth state is polled only while its tab is on screen, for the reason media state is: a
   // scan's results change every second and nobody needs them when the card is not being looked at.
   if(t==='setup'){btPollStart();wifiPollStart();}else{btPollStop();wifiPollStop();}
@@ -1471,7 +1537,7 @@ function onPaneScroll(e){
   clearTimeout(fabHideTimer);
   fabHideTimer=setTimeout(()=>document.body.classList.remove('fab-hide'),700);
 }
-['pset','psetup','mediaScroll'].forEach(id=>{
+['pset','psetup','mediaScroll','pmedia'].forEach(id=>{
   const el=$(id);if(el)el.addEventListener('scroll',onPaneScroll,{passive:true});
 });
 
@@ -2283,12 +2349,235 @@ async function radioLoad(){
     $('radioRow').hidden=false;}
   catch(e){}}
 async function radioPlay(id){
+  if(mediaView==='pod')setMediaView('music');
   try{await fetch('/api/radio/play?id='+encodeURIComponent(id),{method:'POST'});}catch(e){}
   if(typeof mediaPollTick==='function')mediaPollTick();}
 // Light the chip of the station that is on the air (its queue id is "radio:<key>").
 function radioMark(videoId,state){
   const on=(videoId&&String(videoId).indexOf('radio:')===0&&(state==='playing'||state==='downloading'))?String(videoId).slice(6):'';
-  document.querySelectorAll('.radio-chip').forEach(c=>c.classList.toggle('on',c.dataset.id===on));}
+  document.querySelectorAll('#radioChips .radio-chip').forEach(c=>c.classList.toggle('on',c.dataset.id===on));}
+
+// ── Media views ──────────────────────────────────
+// The list under the search box shows one of three things, and the search box searches the same:
+//  'music' — songs from the music server, played on the speaker (and the speaker's live queue);
+//  'yt'    — YouTube, played in this browser by YouTube's embedded player (the speaker is idle);
+//  'pod'   — podcasts, played on the speaker like a radio station.
+// Each view keeps its own query, so switching back and forth loses nothing.
+let mediaView='music';
+const viewQuery={music:'',yt:'',pod:''};
+const VIEW_HINT={music:'Tên bài hát, ca sĩ, DJ, Mix…',yt:'Tìm trên YouTube, hoặc dán link video…',pod:'Tìm podcast…'};
+function escq(t){return String(t==null?'':t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function setMediaView(v){
+  if(v===mediaView){return;}
+  viewQuery[mediaView]=$('mediaSearch').value;
+  mediaView=v;
+  $('mediaSearch').value=viewQuery[v]||'';
+  $('mediaSearch').placeholder=VIEW_HINT[v];
+  $('mediaClear').hidden=!$('mediaSearch').value;
+  // YouTube takes the speaker player's place: there is no room on a phone for both.
+  $('nowPlaying').hidden=v==='yt';
+  $('ytCard').hidden=v!=='yt';
+  $('ytChip').classList.toggle('on',v==='yt');
+  $('ytChip').setAttribute('aria-pressed',v==='yt'?'true':'false');
+  ytNowRender();
+  if(v==='music'){
+    // back to the songs: whatever the poll decides (search results or the live queue)
+    lastDisplayedSig='';mediaResultsCache=mediaSearchResultsCache;renderMediaResults();
+    if(mediaPollTimer)mediaPollTick();
+  }else if(v==='yt')ytRender();
+  else podRender();
+}
+function listHead(img,title,sub){
+  return `<div class="list-head">${img?`<img src="${escq(img)}" alt="">`:''}<div class="lh-info"><b>${escq(title)}</b><small>${escq(sub)}</small></div><button onclick="setMediaView('music')">Đóng</button></div>`;
+}
+
+// ── YouTube (plays in this browser) ──────────────
+let ytList=[],ytIndex=-1,ytCur=null,ytPlayer=null,ytApiP=null,ytPlaying=false,ytErrTimer=null;
+function ytToggle(){setMediaView(mediaView==='yt'?'music':'yt');if(mediaView==='yt'&&!ytCur)setTimeout(()=>$('mediaSearch').focus(),50);}
+function ytSave(){try{localStorage.setItem('r1-yt',JSON.stringify({q:viewQuery.yt||$('mediaSearch').value,results:ytList}));}catch(e){}}
+function ytRestore(){try{const j=JSON.parse(localStorage.getItem('r1-yt')||'null');if(j){viewQuery.yt=j.q||'';ytList=Array.isArray(j.results)?j.results:[];}}catch(e){}}
+// "https://youtu.be/ID", "…watch?v=ID", "/shorts/ID", "/embed/ID", "/live/ID", or a bare ID.
+function ytIdOf(t){
+  t=(t||'').trim();
+  if(/^[A-Za-z0-9_-]{11}$/.test(t))return t;
+  const m=t.match(/(?:youtu\.be\/|[?&]v=|\/(?:shorts|embed|live|v)\/)([A-Za-z0-9_-]{11})/);
+  return m?m[1]:'';
+}
+async function ytSearch(q){
+  const id=/youtu|^[A-Za-z0-9_-]{11}$/.test(q)?ytIdOf(q):'';
+  if(id){ytList=[{id:id,title:'Video từ link',channel:'',duration:'',live:false,thumbnail:'https://i.ytimg.com/vi/'+id+'/mqdefault.jpg'}];ytRender();ytPlayAt(0);return;}
+  $('mediaSpin').hidden=false;$('mediaClear').hidden=true;
+  if(!ytList.length)$('mediaResults').innerHTML=listHead('','YouTube','Đang tìm…');
+  try{
+    const j=await(await fetch('/api/yt/search?q='+encodeURIComponent(q))).json();
+    if(!j.ok)throw new Error(j.error||'');
+    ytList=j.results||[];
+    ytSave();ytRender(ytList.length?null:'Không thấy video nào — thử từ khoá khác.');
+  }catch(e){
+    ytRender((e.message||'Không tìm được trên YouTube.')+' Có thể dán link video YouTube vào ô tìm kiếm, hoặc mở youtube.com.');
+  }finally{$('mediaSpin').hidden=true;$('mediaClear').hidden=!$('mediaSearch').value;}
+}
+function ytRender(err){
+  if(mediaView!=='yt')return;
+  const el=$('mediaResults');
+  let h=listHead('','YouTube Music','Phát trên thiết bị đang mở trang này — không phát ra loa.');
+  if(err)h+=`<div class="media-empty">${SVG_WARN}<span>${escq(err)}</span><a class="guide-link" href="https://www.youtube.com/results?search_query=${encodeURIComponent($('mediaSearch').value.trim())}" target="_blank" rel="noopener" style="margin-top:4px"><span><b>Mở trên YouTube</b></span></a></div>`;
+  else if(!ytList.length)h+=`<div class="media-empty">${SVG_NOTE}<span>Nhập tên bài hát rồi bấm Tìm.<br>Hoặc dán link video YouTube.</span></div>`;
+  h+=ytList.map((v,i)=>`
+    <div class="list-item yt-item${ytCur&&ytCur.id===v.id?' playing':''}" data-yt="${escq(v.id)}">
+      <img class="li-cover" src="${escq(v.thumbnail)}" alt="" loading="lazy">
+      <div class="li-info">
+        <div class="li-title">${escq(v.title)}</div>
+        <div class="li-sub">${v.live?'<span class="li-badge">LIVE</span>':''}${escq(v.channel)}${v.duration?(' · '+escq(v.duration)):''}</div>
+      </div>
+      <div class="li-play-wrap yt"><button class="li-play" onclick="ytTap(${i})" aria-label="Phát">${ytCur&&ytCur.id===v.id&&ytPlaying?SVG_PAUSE:SVG_PLAY}</button></div>
+    </div>`).join('');
+  el.innerHTML=h;
+}
+function ytTap(i){
+  const v=ytList[i];if(!v)return;
+  if(ytCur&&ytCur.id===v.id&&ytPlayer&&ytPlayer.getPlayerState){
+    try{if(ytPlaying)ytPlayer.pauseVideo();else ytPlayer.playVideo();return;}catch(e){}
+  }
+  ytPlayAt(i);
+}
+function ytStep(d){if(ytList.length)ytPlayAt(Math.max(0,Math.min(ytList.length-1,ytIndex+d)));}
+function ytPlayAt(i){
+  const v=ytList[i];if(!v)return;
+  ytIndex=i;ytCur=v;ytPlaying=false;
+  clearTimeout(ytErrTimer);$('ytErr').hidden=true;
+  $('ytIdle').hidden=true;$('ytFrame').hidden=false;
+  $('ytTitle').textContent=v.title||'YouTube';
+  $('ytSub').textContent=(v.channel?v.channel+' · ':'')+'phát trên thiết bị này';
+  $('ytOpen').href='https://www.youtube.com/watch?v='+encodeURIComponent(v.id);
+  $('ytPrev').disabled=i<=0;$('ytNext').disabled=i>=ytList.length-1;
+  if(ytPlayer&&ytPlayer.loadVideoById){try{ytPlayer.loadVideoById(v.id);ytRender();ytNowRender();return;}catch(e){ytPlayer=null;}}
+  // Our own iframe, so that it carries a referrer (YouTube refuses embeds without one, and this
+  // page sets no-referrer for chat backgrounds); the IFrame API then attaches to it for events.
+  $('ytFrame').src='https://www.youtube-nocookie.com/embed/'+encodeURIComponent(v.id)
+    +'?autoplay=1&playsinline=1&rel=0&enablejsapi=1&origin='+encodeURIComponent(location.origin);
+  ytApi().then(YT=>{
+    if(ytPlayer)return;
+    ytPlayer=new YT.Player('ytFrame',{events:{onStateChange:ytState,onError:ytError}});
+  }).catch(()=>{});   // no API: the video still plays, only "next" on end is lost
+  ytRender();ytNowRender();
+}
+function ytApi(){
+  if(window.YT&&YT.Player)return Promise.resolve(YT);
+  if(ytApiP)return ytApiP;
+  ytApiP=new Promise((res,rej)=>{
+    const prev=window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady=()=>{if(prev)try{prev();}catch(e){} res(window.YT);};
+    const sc=document.createElement('script');sc.src='https://www.youtube.com/iframe_api';sc.async=true;
+    sc.onerror=()=>{ytApiP=null;rej(new Error('iframe_api'));};
+    document.head.appendChild(sc);
+  });
+  return ytApiP;
+}
+function ytState(e){
+  // 1 playing, 2 paused, 0 ended
+  ytPlaying=e.data===1;
+  if(e.data===0&&ytIndex<ytList.length-1)ytPlayAt(ytIndex+1);
+  ytRender();ytNowRender();
+}
+function ytError(e){
+  const code=e&&e.data;
+  const blocked=code===101||code===150||code===153;
+  $('ytErr').innerHTML=(blocked?'Chủ video không cho phát nhúng ngoài YouTube.':code===100?'Video đã bị gỡ hoặc để riêng tư.':'Không phát được video này.')
+    +` <a href="https://www.youtube.com/watch?v=${encodeURIComponent(ytCur?ytCur.id:'')}" target="_blank" rel="noopener">Mở trên YouTube</a>`
+    +(ytIndex<ytList.length-1?' · tự chuyển video kế…':'');
+  $('ytErr').hidden=false;ytPlaying=false;ytNowRender();
+  if(ytIndex<ytList.length-1)ytErrTimer=setTimeout(()=>ytPlayAt(ytIndex+1),3500);
+}
+// While YouTube plays and another view is open, the YouTube row says what is playing.
+function ytNowRender(){
+  const show=mediaView!=='yt'&&ytCur&&ytPlaying;
+  $('ytNow').hidden=!show;
+  if(show)$('ytNow').textContent='Đang phát: '+(ytCur.title||'');
+  $('ytChipText').textContent=mediaView==='yt'?'Về nhạc trên loa':'YouTube Music';
+}
+
+// ── Podcasts (play on the speaker, like radio) ───
+let podLoaded=false,podShow=null,podEpisodes=[],podFound=[],podFoundQ='';
+const podShowOf={};   // episode id -> show key, so the chip of the show on the air lights up
+async function podLoad(){
+  if(podLoaded)return;
+  try{const j=await(await fetch('/api/podcast/shows')).json();
+    if(!j.ok||!j.shows||!j.shows.length)return;
+    podLoaded=true;
+    $('podChips').innerHTML=j.shows.map(s=>`<button class="radio-chip" data-id="${escq(s.id)}" title="${escq(s.name)}" onclick="podOpen('${escq(s.id)}',0,true)">${escq(s.short||s.name)}</button>`).join('')
+      +`<button class="radio-chip" data-id="" onclick="podSearchOpen()" title="Tìm podcast khác"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" style="vertical-align:-1px;margin-right:4px"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5L21 21"/></svg>Tìm podcast</button>`;
+    $('podRow').hidden=false;
+  }catch(e){}
+}
+function podSearchOpen(){podShow=null;setMediaView('pod');podRender();setTimeout(()=>$('mediaSearch').focus(),50);}
+// A show from the chips (key) or from search (appleId). From the chips it starts playing the newest
+// episode straight away, as a radio chip does; from search it only opens the list.
+async function podOpen(key,appleId,play){
+  setMediaView('pod');
+  podShow={key:key||'',apple_id:appleId||0,name:'',loading:true};podEpisodes=[];podRender();
+  try{
+    const j=await(await fetch('/api/podcast/episodes?'+(key?'show='+encodeURIComponent(key):'apple='+encodeURIComponent(appleId)))).json();
+    if(!j.ok)throw new Error(j.error||'');
+    podShow=j.show;podEpisodes=j.episodes||[];
+    podEpisodes.forEach(e=>{podShowOf[e.video_id]=podShow.key||('apple:'+podShow.apple_id);});
+    podRender();
+    if(play&&podEpisodes.length)mediaPlay(podEpisodes[0].video_id);
+  }catch(e){podShow={key:key||'',apple_id:appleId||0,name:'',error:e.message||'Không đọc được podcast.'};podRender();}
+}
+async function podSearch(q){
+  podShow=null;podFoundQ=q;
+  $('mediaSpin').hidden=false;$('mediaClear').hidden=true;
+  try{
+    const j=await(await fetch('/api/podcast/search?q='+encodeURIComponent(q))).json();
+    if(!j.ok)throw new Error(j.error||'');
+    podFound=j.results||[];podRender(podFound.length?null:'Không thấy podcast nào — thử từ khoá khác.');
+  }catch(e){podFound=[];podRender(e.message||'Không tìm được podcast.');}
+  finally{$('mediaSpin').hidden=true;$('mediaClear').hidden=!$('mediaSearch').value;}
+}
+function podRender(err){
+  if(mediaView!=='pod')return;
+  const el=$('mediaResults');
+  if(podShow){
+    // one show: its newest episodes, played on the speaker through the normal media list
+    mediaResultsCache=podEpisodes;lastDisplayedSig=JSON.stringify(podEpisodes);
+    if(podShow.loading){el.innerHTML=listHead('','Podcast','Đang tải danh sách tập…');return;}
+    if(podShow.error){el.innerHTML=listHead('','Podcast','')+`<div class="media-empty">${SVG_WARN}<span>${escq(podShow.error)}</span></div>`;return;}
+    el.innerHTML=listHead(podShow.image,podShow.name,(podShow.author?podShow.author+' · ':'')+podEpisodes.length+' tập mới nhất · phát trên loa')
+      +podEpisodes.map(r=>`
+      <div class="list-item" data-vid="${escq(r.video_id)}">
+        <img class="li-cover" ${r.thumbnail?`src="${escq(r.thumbnail)}"`:''} alt="" loading="lazy">
+        <div class="li-info">
+          <div class="li-title">${escq(r.title)}</div>
+          <div class="li-sub">${escq([r.date,r.duration].filter(Boolean).join(' · '))}</div>
+        </div>
+        <div class="li-play-wrap" data-vid="${escq(r.video_id)}">
+          <svg class="li-ring" viewBox="0 0 40 40"><circle cx="20" cy="20" r="17"/></svg>
+          <button class="li-play" onclick="mediaItemTap('${escq(r.video_id)}')" aria-label="Phát trên loa">${SVG_PLAY}</button>
+        </div>
+      </div>`).join('');
+    applyMediaButtonStates();
+    return;
+  }
+  // search results (shows)
+  let h=listHead('','Tìm podcast','Chọn một podcast để xem các tập. Podcast phát trên loa.');
+  if(err)h+=`<div class="media-empty">${SVG_WARN}<span>${escq(err)}</span></div>`;
+  else if(!podFound.length)h+=`<div class="media-empty">${SVG_NOTE}<span>Nhập tên podcast rồi bấm Tìm,<br>hoặc chọn một podcast trong hàng Podcast.</span></div>`;
+  h+=podFound.map(r=>`
+    <div class="list-item pod-show" onclick="podOpen('',${Number(r.apple_id)||0},false)">
+      <img class="li-cover" ${r.image?`src="${escq(r.image)}"`:''} alt="" loading="lazy">
+      <div class="li-info">
+        <div class="li-title">${escq(r.name)}</div>
+        <div class="li-sub">${escq(r.author)}${r.count?(' · '+r.count+' tập'):''}</div>
+      </div>
+    </div>`).join('');
+  el.innerHTML=h;
+}
+function podMark(videoId,state){
+  const live=state==='playing'||state==='downloading';
+  const on=live&&videoId?(podShowOf[videoId]||''):'';
+  document.querySelectorAll('#podChips .radio-chip').forEach(c=>c.classList.toggle('on',!!c.dataset.id&&c.dataset.id===on));
+}
 
 // ── Location & weather ───────────────────────────
 // The speaker keeps the owner's city (coordinates + time zone) and fetches the weather itself;
@@ -2687,6 +2976,7 @@ function restoreMediaSearchState(){
 // seconds and is not something to fire at every pause between keystrokes.
 function onMediaSearchInput(){
   clearTimeout(mediaSearchTimer);
+  if(mediaView!=='music'){$('mediaClear').hidden=!$('mediaSearch').value||!$('mediaSpin').hidden;return;}
   if(!$('mediaSearch').value.trim()){mediaSearch('');return;}
   $('mediaClear').hidden=!$('mediaSpin').hidden;
 }
@@ -2697,11 +2987,14 @@ function mediaSearchGo(){
   const q=$('mediaSearch').value.trim();
   if(!q)return;
   $('mediaSearch').blur();
+  if(mediaView==='yt'){ytSearch(q);return;}
+  if(mediaView==='pod'){podSearch(q);return;}
   setSearching(true);
   mediaSearch(q,true);
 }
 function clearMediaSearch(){
   clearTimeout(mediaSearchTimer);
+  if(mediaView!=='music'){$('mediaSearch').value='';$('mediaClear').hidden=true;$('mediaSearch').focus();return;}
   $('mediaSearch').value='';
   mediaSearch('');                 // drops the results and falls back to the live queue
   $('mediaSearch').focus();
@@ -2762,7 +3055,8 @@ const SVG_NOTE='<svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 18V6.5l
 const SVG_WARN='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5M12 16.5v.01"/></svg>';
 const LI_RING_CIRC=2*Math.PI*17;  // matches the r=17 <circle> in the .li-ring SVG markup
 function applyMediaButtonStates(){
-  document.querySelectorAll('.li-play-wrap').forEach(w=>{
+  // only the speaker's lists: YouTube rows (no data-vid) keep their own state
+  document.querySelectorAll('.li-play-wrap[data-vid]').forEach(w=>{
     const active=w.dataset.vid===mediaState.video_id;
     const downloading=active&&mediaState.state==='downloading';
     const pct=mediaState.download_percent;
@@ -2781,7 +3075,7 @@ function applyMediaButtonStates(){
               :(active&&mediaState.state==='playing')?SVG_PAUSE:SVG_PLAY;
     if(btn.dataset.icon!==want){btn.dataset.icon=want;btn.innerHTML=want;}
   });
-  document.querySelectorAll('.list-item').forEach(row=>{
+  document.querySelectorAll('.list-item[data-vid]').forEach(row=>{
     row.classList.toggle('playing',row.dataset.vid===mediaState.video_id&&mediaState.state==='playing');
   });
 }
@@ -2812,6 +3106,7 @@ function mediaStop(){fetch('/api/media/stop',{method:'POST'});}
 function renderNowPlaying(s){
   mediaState=s;
   radioMark(s.video_id,s.state);
+  podMark(s.video_id,s.state);
   // What the list shows: the user's search results whenever the search box has text (so typing a
   // query while music plays keeps its results on screen -- the poll must never yank them away),
   // otherwise the live server-pushed queue while a session is active (so "what's next" is visible
@@ -2822,7 +3117,8 @@ function renderNowPlaying(s){
   const searching=!!$('mediaSearch').value.trim();
   const list=searching?mediaSearchResultsCache:(sessionActive?(s.queue||[]):mediaSearchResultsCache);
   const sig=JSON.stringify(list);
-  if(sig!==lastDisplayedSig){lastDisplayedSig=sig;mediaResultsCache=list;renderMediaResults();}
+  if(mediaView!=='music'){applyMediaButtonStates();}
+  else if(sig!==lastDisplayedSig){lastDisplayedSig=sig;mediaResultsCache=list;renderMediaResults();}
   else{applyMediaButtonStates();}
   // The player is always on screen (it is the tab's centrepiece, not a strip that appears with a
   // song), so every state has to say something rather than hide.
@@ -2838,7 +3134,7 @@ function renderNowPlaying(s){
   const meta=!has?'DB-Robot Music đã sẵn sàng… Đang chờ lệnh!'
     :st==='downloading'?'Đang kết nối luồng nhạc… vui lòng chờ giây lát'
     :st==='error'?'Không phát được luồng nhạc — bấm Thử lại, hoặc tìm lại bài'
-    :'Nguồn: DB-Robot Music | '+(s.title||'')+(s.artist?' | '+s.artist:'')+' | '+(MP_META[st]||'');
+    :'Nguồn: '+mediaSource(s.video_id)+' | '+(s.title||'')+(s.artist?' | '+s.artist:'')+' | '+(MP_META[st]||'');
   if($('mpMeta').textContent!==meta)$('mpMeta').textContent=meta;
   const want=(st==='playing'?SVG_PAUSE:st==='error'?SVG_RETRY:SVG_PLAY)+'<span>'+(MP_LABEL[st]||'Phát nhạc')+'</span>';
   if($('npPlay').dataset.icon!==want){$('npPlay').dataset.icon=want;$('npPlay').innerHTML=want;}
@@ -2856,6 +3152,7 @@ function renderNowPlaying(s){
   $('npDur').textContent=dur>0?fmtClock(dur):(sessionActive?'LIVE':'--:--');
   if(st==='playing')vizPollLoop();
 }
+function mediaSource(id){id=String(id||'');return id.indexOf('radio:')===0?'Radio':id.indexOf('pod:')===0?'Podcast':'DB-Robot Music';}
 const MP_LABEL={playing:'Tạm dừng',paused:'Tiếp tục',downloading:'Đang tải…',stopped:'Phát lại',error:'Thử lại'};
 const MP_META={playing:'Đang phát luồng 128k MP3…',paused:'Đang tạm dừng',stopped:'Đã dừng'};
 
@@ -2937,6 +3234,7 @@ async function mediaPollTick(){
   try{renderNowPlaying(await(await fetch('/api/media/state')).json());}catch(e){}
 }
 restoreMediaSearchState();
+ytRestore();
 // Paint the empty state up front. Without this the results area stays a blank void until the first
 // /api/media/state tick lands (~1s, longer if the device is busy) -- on the Media tab that reads as
 // a broken page rather than "nothing here yet".

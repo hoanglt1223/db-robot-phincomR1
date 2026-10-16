@@ -3,6 +3,13 @@
 Mỗi bản một mục `## v<versionName>`. Khi phát hành, đoạn văn dưới mục đó được đưa vào trang Release
 và vào ô "Bản mới nhất" trong trang điều khiển của loa -- viết ngắn, cho người dùng đọc.
 
+## v1.5.12
+
+- **YouTube Music trong tab Media**: tìm bài hát, video trên YouTube hoặc dán link video, rồi xem và nghe ngay trên trang điều khiển. Không cần máy chủ nhạc. Video phát trên điện thoại hoặc máy tính đang mở trang, không phát ra loa.
+- **Podcast**: hàng Podcast dưới Radio có 13 chương trình miễn phí (Have A Sip, Giang ơi Radio, Tri Kỷ Cảm Xúc, Đọc truyện đêm khuya, Thời sự RFI, 6 Minute English…). Chạm là loa phát tập mới nhất, kèm danh sách các tập khác. Nút "Tìm podcast" tìm thêm chương trình trong danh bạ Apple Podcasts.
+- Thẻ Server trong tab System có thêm link "Hướng dẫn kết nối máy chủ DB-Robot".
+- Trên điện thoại, cả tab Media cuộn được, danh sách bài không còn bị ép nhỏ.
+
 ## v1.5.11
 
 - Loa tự đọc địa chỉ IP ngay sau khi được kích hoạt lại trên máy chủ (xoá thiết bị rồi thêm lại), kể cả khi địa chỉ không đổi. Bản trước chỉ đọc khi địa chỉ thay đổi.

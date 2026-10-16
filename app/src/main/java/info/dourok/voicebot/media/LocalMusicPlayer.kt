@@ -85,6 +85,14 @@ object LocalMusicPlayer {
     @Volatile var pendingForVoice = false
         private set
 
+    /**
+     * Something is loaded here -- playing, paused, or waiting for a voice session to end. The
+     * panel's transport buttons are routed here then, whatever the music-server setting says: a
+     * radio station or a podcast plays on this player even with no music server configured.
+     */
+    val isLoaded: Boolean
+        get() = (state == PLAYING || state == LOADING || state == PAUSED) && index >= 0 && index < queue.size
+
     /** A song is coming out of the speaker, or is about to. */
     val isActive: Boolean
         get() = state == PLAYING || state == LOADING
