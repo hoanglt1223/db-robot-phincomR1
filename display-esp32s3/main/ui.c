@@ -81,6 +81,8 @@ LV_FONT_DECLARE(font_icon30);
 #define I_HAND    ""
 #define I_POWER   ""
 #define I_BCAST   ""
+#define I_PODCAST ""
+#define I_DISH    ""
 #define I_BACK    ""
 
 // ── themes ───────────────────────────────────────────────────────────────────────
@@ -132,13 +134,15 @@ static void apply_palette(void) { P = g_cfg.light ? &PAL_LIGHT : &PAL_DARK; }
 
 typedef enum { P_STATUS, P_CHOOSE, P_VOICE, P_MUSIC, P_IDLE, P_COUNT } page_t;
 
-enum { APP_THEME, APP_BRIGHT, APP_VOLUME, APP_CALL, APP_FIND, APP_SCREEN, APP_INFO, APP_TOUCH, APP_COUNT };
+enum { APP_SCREEN, APP_VOLUME, APP_ALARM, APP_RADIO, APP_PODCAST, APP_MUSIC, APP_CALL, APP_FIND, APP_INFO, APP_COUNT };
 
 static spk_state_t st;           // the copy the UI works from
 static uint32_t st_seq = 0xFFFFFFFF;
 static page_t cur_page = P_COUNT;
 static int64_t voice_until;      // keep the voice page a little after the talk ends
-static int64_t suppress_voice_until;   // after "Tắt nghe": stay on the main page for a moment
+static int64_t lock_until;       // after "Tắt nghe": the chat page stays locked while the speaker winds down
+static int64_t lock_resend;      // next time to repeat "sleep" while the speaker still talks
+static int64_t lock_quiet_since; // since when the speaker has been quiet (unlocks after 1.5 s)
 
 static lv_obj_t *pages[P_COUNT];
 static lv_obj_t *top_dot, *top_name, *top_right, *top_theme;
@@ -167,8 +171,16 @@ static int sheet_app = -1;
 static lv_obj_t *vol_num, *vol_bar, *bri_num;
 
 static void request_rebuild(void);
+
 static void open_sheet(int app);
 static void close_sheet(void);
+static void sheet_back(void);
+static void menu_reset(void);
+static void sheet_list(lv_obj_t *b, int mode);
+static void sheet_alarm(lv_obj_t *b);
+static void sheet_music(lv_obj_t *b);
+static void toast(const char *msg, bool ok);
+enum { LM_RADIO, LM_PODCAST, LM_EPISODES };
 
 // ── helpers ──────────────────────────────────────────────────────────────────────
 
@@ -191,7 +203,12 @@ static lv_obj_t *box(lv_obj_t *parent, int x, int y, int w, int h)
     return o;
 }
 
-static void cmd_cb(lv_event_t *e) { link_cmd((const char *)lv_event_get_user_data(e)); }
+static void cmd_cb(lv_event_t *e)
+{
+    const char *c = (const char *)lv_event_get_user_data(e);
+    if (!strcmp(c, "wake")) lock_until = 0;
+    link_cmd(c);
+}
 
 /* A button drawn from scratch (no theme styles to fight): primary = the accent gradient, otherwise
  * a bordered card. The label is the first child. */
@@ -282,7 +299,7 @@ static void backlight_update(void)
         if (tm.tm_hour >= 22 || tm.tm_hour < 6) b = b * 25 / 100;
     }
     // ringing, talking, or setting the brightness: the real level
-    if (st.al_ring[0] || cur_page == P_VOICE || sheet_app == APP_BRIGHT) b = g_cfg.bright;
+    if (st.al_ring[0] || cur_page == P_VOICE || sheet_app == APP_SCREEN) b = g_cfg.bright;
     if (b < 3) b = 3;
     static int last = -1;
     if (b != last) { display_backlight(b); last = b; }
@@ -472,8 +489,11 @@ static void voice_btn_cb(lv_event_t *e)
         link_cmd("sleep");
         link_cmd("mute");
         voice_until = 0;
-        suppress_voice_until = NOW_US() + 2500000;
+        lock_until = NOW_US() + 20 * 1000000LL;
+        lock_resend = NOW_US() + 2000000;
+        lock_quiet_since = 0;
     } else {
+        lock_until = 0;
         link_cmd("wake");
     }
 }
@@ -630,7 +650,7 @@ static void build_music(lv_obj_t *p)
         lv_obj_set_style_radius(m_bars[i], 2, 0);
         lv_obj_set_style_bg_opa(m_bars[i], LV_OPA_COVER, 0);
         lv_obj_set_style_bg_color(m_bars[i],
-            lv_color_mix(lv_color_hex(P->a2), lv_color_hex(P->a1), (uint8_t)(i * 255 / (LINK_BANDS - 1))), 0);
+            lv_color_hsv_to_rgb((uint16_t)(i * 300 / (LINK_BANDS - 1)), 90, P->light ? 90 : 100), 0);   // rainbow, red → violet
     }
     m_pos = label(p, &font_vn14, C_MUTED, "0:00");
     lv_obj_set_pos(m_pos, 10, 136);
@@ -822,26 +842,23 @@ static void update_alarm(void)
 typedef struct { const char *icon; const char *label; uint32_t color; } app_t;
 
 static const app_t APPS[APP_COUNT] = {
-    [APP_THEME]  = { I_MOON,  "Giao diện", 0xF59E0B },
-    [APP_BRIGHT] = { I_BULB,  "Độ sáng",   0xEAB308 },
-    [APP_VOLUME] = { I_VOLUP, "Âm lượng",  0x16A34A },
-    [APP_CALL]   = { I_MIC,   "Gọi loa",   0xEF4444 },
-    [APP_FIND]   = { I_BCAST, "Tìm loa",   0x8B5CF6 },
-    [APP_SCREEN] = { I_TV,    "Màn hình",  0x0891B2 },
-    [APP_INFO]   = { I_INFO,  "Thông tin", 0x2563EB },
-    [APP_TOUCH]  = { I_HAND,  "Cảm ứng",   0xDB2777 },
+    [APP_SCREEN]  = { I_TV,      "Màn hình", 0x0891B2 },
+    [APP_VOLUME]  = { I_VOLUP,   "Âm lượng", 0x16A34A },
+    [APP_ALARM]   = { I_BELL,    "Báo thức", 0xF59E0B },
+    [APP_RADIO]   = { I_BCAST,   "Radio",    0xEA580C },
+    [APP_PODCAST] = { I_PODCAST, "Podcast",  0x7C3AED },
+    [APP_MUSIC]   = { I_MUSIC,   "Nhạc",     0xDB2777 },
+    [APP_CALL]    = { I_MIC,     "Gọi loa",  0xEF4444 },
+    [APP_FIND]    = { I_DISH,    "Tìm loa",  0x8B5CF6 },
+    [APP_INFO]    = { I_INFO,    "Thông tin", 0x2563EB },
 };
 
 static void app_cb(lv_event_t *e)
 {
     int app = (int)(intptr_t)lv_event_get_user_data(e);
     switch (app) {
-    case APP_THEME:
-        g_cfg.light = !g_cfg.light;
-        cfg_save();
-        request_rebuild();
-        break;
     case APP_CALL:
+        lock_until = 0;
         link_cmd("wake");
         go_main();
         break;
@@ -857,36 +874,35 @@ static void app_cb(lv_event_t *e)
 
 static void build_apps(lv_obj_t *p)
 {
-    const int cw = LCD_H_RES / 4, ch = 100;
+    const int cw = LCD_H_RES / 4, ch = 70;
     for (int i = 0; i < APP_COUNT; i++) {
-        int x = (i % 4) * cw, y = 4 + (i / 4) * ch;
+        int x = (i % 4) * cw, y = 2 + (i / 4) * ch;
         lv_obj_t *cell = box(p, x + 3, y, cw - 6, ch - 4);
         lv_obj_add_flag(cell, LV_OBJ_FLAG_CLICKABLE);
-        lv_obj_set_style_radius(cell, 14, 0);
+        lv_obj_set_style_radius(cell, 12, 0);
         lv_obj_set_style_bg_color(cell, lv_color_hex(C_CARD2), 0);
         lv_obj_set_style_bg_opa(cell, LV_OPA_COVER, LV_STATE_PRESSED);
-        lv_obj_t *sq = box(cell, (cw - 6 - 54) / 2, 8, 54, 54);
+        lv_obj_t *sq = box(cell, (cw - 6 - 38) / 2, 4, 38, 38);
         lv_obj_remove_flag(sq, LV_OBJ_FLAG_CLICKABLE);
-        lv_obj_set_style_radius(sq, 15, 0);
+        lv_obj_set_style_radius(sq, 11, 0);
         lv_obj_set_style_bg_opa(sq, LV_OPA_COVER, 0);
         lv_obj_set_style_bg_color(sq, lv_color_hex(APPS[i].color), 0);
         lv_obj_set_style_bg_grad_color(sq, lv_color_mix(lv_color_white(), lv_color_hex(APPS[i].color), 70), 0);
         lv_obj_set_style_bg_grad_dir(sq, LV_GRAD_DIR_VER, 0);
         const char *ic = APPS[i].icon;
-        if (i == APP_THEME) ic = P->light ? I_SUN : I_MOON;
         app_icon_lbl[i] = label(sq, &font_icon30, 0xFFFFFF, ic);
         lv_obj_center(app_icon_lbl[i]);
         lv_obj_t *l = label(cell, &font_vn14, C_TEXT, APPS[i].label);
         lv_obj_set_width(l, cw - 6);
         lv_obj_set_style_text_align(l, LV_TEXT_ALIGN_CENTER, 0);
-        lv_obj_set_pos(l, 0, 68);
+        lv_obj_set_pos(l, 0, 45);
         lv_obj_add_event_cb(cell, app_cb, LV_EVENT_CLICKED, (void *)(intptr_t)i);
     }
 }
 
 // the sheet: a back arrow and a title above the body
 
-static void back_cb(lv_event_t *e) { close_sheet(); }
+static void back_cb(lv_event_t *e) { sheet_back(); }
 
 static void build_sheet(lv_obj_t *scr)
 {
@@ -915,6 +931,7 @@ static void close_sheet(void)
     lv_obj_add_flag(sheet, LV_OBJ_FLAG_HIDDEN);
     sheet_app = -1;
     vol_num = vol_bar = bri_num = NULL;
+    menu_reset();
 }
 
 static lv_obj_t *note(lv_obj_t *parent, int x, int y, int w, const char *text, uint32_t color)
@@ -963,22 +980,6 @@ static void bri_cb(lv_event_t *e)
 
 static void bri_done_cb(lv_event_t *e) { cfg_save(); }
 
-static void sheet_brightness(lv_obj_t *b)
-{
-    char t[16];
-    snprintf(t, sizeof t, "%d%%", g_cfg.bright);
-    bri_num = label(b, &font_num52, C_TEXT, t);
-    lv_obj_align(bri_num, LV_ALIGN_TOP_MID, 0, 6);
-    lv_obj_t *s = lv_slider_create(b);
-    lv_obj_set_size(s, 250, 14);
-    lv_obj_set_pos(s, 35, 90);
-    lv_slider_set_range(s, 5, 100);
-    lv_slider_set_value(s, g_cfg.bright, LV_ANIM_OFF);
-    style_slider(s);
-    lv_obj_add_event_cb(s, bri_cb, LV_EVENT_VALUE_CHANGED, NULL);
-    lv_obj_add_event_cb(s, bri_done_cb, LV_EVENT_RELEASED, NULL);
-    note(b, 16, 124, 288, "Ban đêm (22:00–6:00) màn hình tự giảm sáng nếu bật trong mục Màn hình.", C_MUTED);
-}
 
 /* volume of the speaker */
 static void sheet_volume(lv_obj_t *b)
@@ -1058,12 +1059,33 @@ static void sw_night_cb(lv_event_t *e)
     cfg_save();
 }
 
+/* "Màn hình": brightness, theme, rotation, colour inversion, night dimming and touch calibration */
+static void calib_cb(lv_event_t *e);
 static void sheet_screen(lv_obj_t *b)
 {
-    row_switch(b, 0, "Giao diện sáng (tắt = tối)", g_cfg.light, sw_theme_cb);
-    row_switch(b, 42, "Xoay ngược 180°", g_cfg.rot180, sw_flip_cb);
-    row_switch(b, 84, "Đảo màu (nếu màu bị âm bản)", g_cfg.invert, sw_invert_cb);
-    row_switch(b, 126, "Giảm sáng ban đêm 22:00–6:00", g_cfg.night_dim, sw_night_cb);
+    lv_obj_add_flag(b, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_scroll_dir(b, LV_DIR_VER);
+    label(b, &font_vn14, C_TEXT, "Độ sáng");
+    lv_obj_t *l0 = lv_obj_get_child(b, -1);
+    lv_obj_set_pos(l0, 14, 8);
+    char t[16];
+    snprintf(t, sizeof t, "%d%%", g_cfg.bright);
+    bri_num = label(b, &font_vn18, C_TEXT, t);
+    lv_obj_align(bri_num, LV_ALIGN_TOP_RIGHT, -14, 4);
+    lv_obj_t *s = lv_slider_create(b);
+    lv_obj_set_size(s, 284, 14);
+    lv_obj_set_pos(s, 18, 34);
+    lv_slider_set_range(s, 5, 100);
+    lv_slider_set_value(s, g_cfg.bright, LV_ANIM_OFF);
+    style_slider(s);
+    lv_obj_add_event_cb(s, bri_cb, LV_EVENT_VALUE_CHANGED, NULL);
+    lv_obj_add_event_cb(s, bri_done_cb, LV_EVENT_RELEASED, NULL);
+    row_switch(b, 62, "Giao diện sáng (tắt = tối)", g_cfg.light, sw_theme_cb);
+    row_switch(b, 104, "Xoay ngược 180°", g_cfg.rot180, sw_flip_cb);
+    row_switch(b, 146, "Đảo màu (nếu màu bị âm bản)", g_cfg.invert, sw_invert_cb);
+    row_switch(b, 188, "Giảm sáng ban đêm 22:00–6:00", g_cfg.night_dim, sw_night_cb);
+    lv_obj_t *g = button(b, 8, 234, LCD_H_RES - 16, 38, I_HAND "  Hiệu chỉnh cảm ứng (khởi động lại)", &font_vn14, false, NULL);
+    lv_obj_add_event_cb(g, calib_cb, LV_EVENT_CLICKED, NULL);
 }
 
 /* info */
@@ -1098,26 +1120,422 @@ static void calib_cb(lv_event_t *e)
     esp_restart();
 }
 
-static void sheet_touch(lv_obj_t *b)
+
+// ── radio, podcasts, music, alarms: the speaker's own lists, asked over the link ─────
+
+static int list_mode;
+static lv_obj_t *lst, *lst_note, *mu_ta;
+static link_list_t lst_data, rx_list;
+static uint32_t rx_seq, res_seq, al_seq;
+static char want_kind[10], want_id[40];
+static bool lst_wait, play_wait, al_edit, al_have;
+static int64_t lst_t0;
+static link_alarms_t al_data;
+
+static void menu_reset(void)
 {
-    note(b, 14, 2, 292, "Màn hình khởi động lại rồi hiện 3 dấu +. Chạm vào giữa từng dấu để chỉnh cảm ứng cho chính xác.", C_TEXT);
-    lv_obj_t *g = button(b, 40, 96, 240, 46, I_HAND "  Bắt đầu hiệu chỉnh", &font_vn18, true, NULL);
-    lv_obj_add_event_cb(g, calib_cb, LV_EVENT_CLICKED, NULL);
+    lst = lst_note = mu_ta = NULL;
+    lst_wait = play_wait = al_edit = false;
+}
+
+static lv_obj_t *scroll_box(lv_obj_t *b)
+{
+    lv_obj_t *o = box(b, 0, 0, LCD_H_RES, PAGE_H - 40);
+    lv_obj_add_flag(o, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_scroll_dir(o, LV_DIR_VER);
+    return o;
+}
+
+static lv_obj_t *card_row(lv_obj_t *parent, int y, int h)
+{
+    lv_obj_t *r = box(parent, 8, y, LCD_H_RES - 16, h);
+    lv_obj_add_flag(r, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_set_style_radius(r, 10, 0);
+    lv_obj_set_style_bg_opa(r, LV_OPA_COVER, 0);
+    lv_obj_set_style_bg_color(r, lv_color_hex(C_CARD), 0);
+    lv_obj_set_style_bg_color(r, lv_color_hex(C_CARD2), LV_STATE_PRESSED);
+    lv_obj_set_style_border_width(r, 1, 0);
+    lv_obj_set_style_border_color(r, lv_color_hex(C_LINE), 0);
+    return r;
+}
+
+static void lst_say(const char *text)
+{
+    if (!lst) return;
+    lv_obj_clean(lst);
+    lst_note = note(lst, 14, 10, 292, text, C_MUTED);
+}
+
+static void list_pick_cb(lv_event_t *e)
+{
+    int i = (int)(intptr_t)lv_event_get_user_data(e);
+    if (i < 0 || i >= lst_data.count) return;
+    if (list_mode == LM_RADIO) {
+        link_play_radio(lst_data.it[i].id);
+        play_wait = true;
+        toast("Đang mở radio…", true);
+    } else if (list_mode == LM_PODCAST) {
+        list_mode = LM_EPISODES;
+        lv_label_set_text(sheet_title, lst_data.it[i].n);
+        snprintf(want_id, sizeof want_id, "%s", lst_data.it[i].id);
+        snprintf(want_kind, sizeof want_kind, "episodes");
+        lst_say("Đang tải các tập…");
+        lst_wait = true;
+        lst_t0 = NOW_US();
+        link_request("episodes", want_id);
+    } else {
+        link_play_episode(atoi(lst_data.it[i].id));
+        play_wait = true;
+        toast("Đang mở tập podcast…", true);
+    }
+}
+
+static void lst_fill(void)
+{
+    lv_obj_clean(lst);
+    lst_note = NULL;
+    if (lst_data.count == 0) { lst_say("Không có mục nào."); return; }
+    for (int i = 0; i < lst_data.count; i++) {
+        lv_obj_t *r = card_row(lst, 8, 0);
+        lv_obj_set_y(r, 2 + i * 48);
+        lv_obj_set_height(r, 44);
+        lv_obj_t *l = label(r, &font_vn14, C_TEXT, lst_data.it[i].n);
+        lv_obj_set_width(l, LCD_H_RES - 16 - 36);
+        lv_label_set_long_mode(l, LV_LABEL_LONG_DOT);
+        lv_obj_align(l, LV_ALIGN_LEFT_MID, 12, 0);
+        lv_obj_t *ch = label(r, &font_vn14, C_ACCENT, list_mode == LM_PODCAST ? ">" : I_PLAY);
+        lv_obj_align(ch, LV_ALIGN_RIGHT_MID, -10, 0);
+        lv_obj_add_event_cb(r, list_pick_cb, LV_EVENT_CLICKED, (void *)(intptr_t)i);
+    }
+    lv_obj_t *pad = box(lst, 0, 2 + lst_data.count * 48, 1, 6);
+    (void)pad;
+}
+
+static void list_load(int mode, const char *id)
+{
+    list_mode = mode;
+    snprintf(want_kind, sizeof want_kind, "%s", mode == LM_RADIO ? "radio" : mode == LM_PODCAST ? "podcast" : "episodes");
+    snprintf(want_id, sizeof want_id, "%s", id ? id : "");
+    lst_say("Đang tải…");
+    lst_wait = true;
+    lst_t0 = NOW_US();
+    link_request(want_kind, id);
+}
+
+static void sheet_list(lv_obj_t *b, int mode)
+{
+    lst = scroll_box(b);
+    list_load(mode, NULL);
+}
+
+// alarms
+
+static const char *DAY[7] = { "T2", "T3", "T4", "T5", "T6", "T7", "CN" };
+
+static void days_text(uint8_t d, char *out, size_t n)
+{
+    if (d == 0) { snprintf(out, n, "Một lần"); return; }
+    if (d == 0x7F) { snprintf(out, n, "Hằng ngày"); return; }
+    if (d == 0x1F) { snprintf(out, n, "T2–T6"); return; }
+    size_t k = 0;
+    out[0] = 0;
+    for (int i = 0; i < 7; i++)
+        if (d & (1 << i)) k += snprintf(out + k, n - k, "%s%s", k ? " " : "", DAY[i]);
+}
+
+static void alarm_editor(int idx);
+
+static void al_sw_cb(lv_event_t *e)
+{
+    int i = (int)(intptr_t)lv_event_get_user_data(e);
+    if (i < 0 || i >= al_data.count) return;
+    bool on = lv_obj_has_state(lv_event_get_target(e), LV_STATE_CHECKED);
+    al_data.a[i].on = on;
+    link_alarm_toggle(al_data.a[i].id, on);
+}
+
+static void al_row_cb(lv_event_t *e) { alarm_editor((int)(intptr_t)lv_event_get_user_data(e)); }
+
+static void alarm_fill(void)
+{
+    if (!lst) return;
+    lv_obj_clean(lst);
+    lst_note = NULL;
+    lv_obj_t *add = button(lst, 8, 2, LCD_H_RES - 16, 38, I_PLUS "  Thêm báo thức", &font_vn14, true, NULL);
+    lv_obj_add_event_cb(add, al_row_cb, LV_EVENT_CLICKED, (void *)(intptr_t)-1);
+    int y = 46;
+    if (al_data.count == 0) note(lst, 14, y + 4, 292, "Chưa có báo thức nào.", C_MUTED);
+    for (int i = 0; i < al_data.count; i++, y += 56) {
+        const li_alarm_t *a = &al_data.a[i];
+        lv_obj_t *r = card_row(lst, y, 52);
+        lv_obj_t *tm = label(r, &font_vn24, a->on ? C_TEXT : C_MUTED, a->time);
+        lv_obj_align(tm, LV_ALIGN_LEFT_MID, 12, 0);
+        char d[40], line[96];
+        days_text(a->days, d, sizeof d);
+        snprintf(line, sizeof line, "%s%s%s", d, a->label[0] ? " · " : "", a->label);
+        lv_obj_t *ds = label(r, &font_vn14, C_MUTED, line);
+        lv_obj_set_width(ds, 140);
+        lv_label_set_long_mode(ds, LV_LABEL_LONG_DOT);
+        lv_obj_align(ds, LV_ALIGN_LEFT_MID, 92, 0);
+        lv_obj_t *sw = lv_switch_create(r);
+        lv_obj_set_size(sw, 46, 24);
+        lv_obj_align(sw, LV_ALIGN_RIGHT_MID, -10, 0);
+        style_switch(sw);
+        if (a->on) lv_obj_add_state(sw, LV_STATE_CHECKED);
+        lv_obj_add_event_cb(sw, al_sw_cb, LV_EVENT_VALUE_CHANGED, (void *)(intptr_t)i);
+        lv_obj_add_event_cb(r, al_row_cb, LV_EVENT_CLICKED, (void *)(intptr_t)i);
+    }
+    box(lst, 0, y, 1, 6);
+}
+
+static void sheet_alarm(lv_obj_t *b)
+{
+    lst = scroll_box(b);
+    al_edit = false;
+    if (al_have) alarm_fill(); else lst_say("Đang tải…");
+    link_request("alarms", NULL);
+}
+
+static lv_obj_t *ed_h, *ed_m, *ed_day[7];
+static char ed_id[20], ed_label[44];
+
+static void ed_save_cb(lv_event_t *e)
+{
+    char tm[8];
+    snprintf(tm, sizeof tm, "%02d:%02d", (int)lv_roller_get_selected(ed_h), (int)lv_roller_get_selected(ed_m));
+    uint8_t days = 0;
+    for (int i = 0; i < 7; i++) if (lv_obj_has_state(ed_day[i], LV_STATE_CHECKED)) days |= 1 << i;
+    link_alarm_save(ed_id, tm, days, ed_label);
+    al_edit = false;
+    alarm_fill();
+}
+
+static void ed_del_cb(lv_event_t *e)
+{
+    if (ed_id[0]) link_alarm_del(ed_id);
+    al_edit = false;
+    alarm_fill();
+}
+
+static lv_obj_t *roller(lv_obj_t *b, int x, int n, int sel)
+{
+    static char opts[200];
+    size_t k = 0;
+    for (int i = 0; i < n; i++) k += snprintf(opts + k, sizeof opts - k, "%s%02d", i ? "\n" : "", i);
+    lv_obj_t *r = lv_roller_create(b);
+    lv_roller_set_options(r, opts, LV_ROLLER_MODE_NORMAL);
+    lv_roller_set_visible_row_count(r, 3);
+    lv_roller_set_selected(r, sel, LV_ANIM_OFF);
+    lv_obj_set_pos(r, x, 2);
+    lv_obj_set_width(r, 84);
+    lv_obj_set_style_text_font(r, &font_vn18, 0);
+    lv_obj_set_style_text_color(r, lv_color_hex(C_MUTED), 0);
+    lv_obj_set_style_bg_color(r, lv_color_hex(C_CARD), 0);
+    lv_obj_set_style_bg_opa(r, LV_OPA_COVER, 0);
+    lv_obj_set_style_border_width(r, 1, 0);
+    lv_obj_set_style_border_color(r, lv_color_hex(C_LINE), 0);
+    lv_obj_set_style_radius(r, 12, 0);
+    lv_obj_set_style_text_color(r, lv_color_hex(P->on_a), LV_PART_SELECTED);
+    lv_obj_set_style_bg_color(r, lv_color_hex(P->a1), LV_PART_SELECTED);
+    lv_obj_set_style_bg_opa(r, LV_OPA_COVER, LV_PART_SELECTED);
+    return r;
+}
+
+static void alarm_editor(int idx)
+{
+    if (!lst) return;
+    al_edit = true;
+    lv_obj_t *b = lv_obj_get_parent(lst);
+    lv_obj_delete(lst);
+    lst = NULL;
+    lv_obj_t *v = box(b, 0, 0, LCD_H_RES, PAGE_H - 40);   // not "lst": the list is gone while editing
+    int h = 7, m = 0;
+    uint8_t days = 0;
+    ed_id[0] = ed_label[0] = 0;
+    if (idx >= 0 && idx < al_data.count) {
+        const li_alarm_t *a = &al_data.a[idx];
+        sscanf(a->time, "%d:%d", &h, &m);
+        days = a->days;
+        snprintf(ed_id, sizeof ed_id, "%s", a->id);
+        snprintf(ed_label, sizeof ed_label, "%s", a->label);
+    }
+    if (h < 0 || h > 23) h = 7;
+    if (m < 0 || m > 59) m = 0;
+    ed_h = roller(v, 8, 24, h);
+    ed_m = roller(v, 108, 60, m);
+    lv_obj_t *c = label(v, &font_vn24, C_TEXT, ":");
+    lv_obj_set_pos(c, 95, 34);
+    for (int i = 0; i < 7; i++) {
+        lv_obj_t *d = box(v, 8 + i * 44, 108, 40, 32);
+        lv_obj_add_flag(d, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_CHECKABLE);
+        lv_obj_set_style_radius(d, 10, 0);
+        lv_obj_set_style_bg_opa(d, LV_OPA_COVER, 0);
+        lv_obj_set_style_bg_color(d, lv_color_hex(C_CARD), 0);
+        lv_obj_set_style_border_width(d, 1, 0);
+        lv_obj_set_style_border_color(d, lv_color_hex(C_LINE), 0);
+        lv_obj_set_style_bg_color(d, lv_color_hex(P->a1), LV_STATE_CHECKED);
+        lv_obj_set_style_text_color(d, lv_color_hex(C_TEXT), 0);
+        lv_obj_set_style_text_color(d, lv_color_hex(P->on_a), LV_STATE_CHECKED);
+        lv_obj_t *l = lv_label_create(d);
+        lv_obj_set_style_text_font(l, &font_vn14, 0);
+        lv_label_set_text(l, DAY[i]);
+        lv_obj_center(l);
+        if (days & (1 << i)) lv_obj_add_state(d, LV_STATE_CHECKED);
+        ed_day[i] = d;
+    }
+    note(v, 10, 146, 300, "Không chọn thứ nào = chỉ kêu một lần.", C_MUTED);
+    lv_obj_t *sv = button(v, 208, 2, 104, 46, I_CHECK "  Lưu", &font_vn18, true, NULL);
+    lv_obj_add_event_cb(sv, ed_save_cb, LV_EVENT_CLICKED, NULL);
+    if (idx >= 0) {
+        lv_obj_t *dl = button(v, 208, 54, 104, 46, "Xoá", &font_vn18, false, NULL);
+        lv_obj_add_event_cb(dl, ed_del_cb, LV_EVENT_CLICKED, NULL);
+    } else {
+        lv_obj_t *cn = button(v, 208, 54, 104, 46, "Huỷ", &font_vn18, false, NULL);
+        lv_obj_add_event_cb(cn, ed_del_cb, LV_EVENT_CLICKED, NULL);   // new alarm has no id: just closes
+    }
+    (void)v;
+}
+
+// music: type a name, the speaker finds and plays it
+
+static void music_go(void)
+{
+    if (!mu_ta) return;
+    const char *q = lv_textarea_get_text(mu_ta);
+    if (!q[0]) { toast("Gõ tên bài hát hoặc ca sĩ", false); return; }
+    link_play_music(q);
+    play_wait = true;
+    toast("Đang tìm bài…", true);
+}
+
+static void music_go_cb(lv_event_t *e) { music_go(); }
+
+static void sheet_music(lv_obj_t *b)
+{
+    mu_ta = lv_textarea_create(b);
+    lv_obj_set_pos(mu_ta, 8, 4);
+    lv_obj_set_size(mu_ta, 232, 38);
+    lv_textarea_set_one_line(mu_ta, true);
+    lv_textarea_set_max_length(mu_ta, 60);
+    lv_textarea_set_placeholder_text(mu_ta, "Tên bài hát (gõ không dấu)");
+    lv_obj_set_style_text_font(mu_ta, &font_vn14, 0);
+    lv_obj_set_style_text_color(mu_ta, lv_color_hex(C_TEXT), 0);
+    lv_obj_set_style_text_color(mu_ta, lv_color_hex(C_MUTED), LV_PART_TEXTAREA_PLACEHOLDER);
+    lv_obj_set_style_bg_color(mu_ta, lv_color_hex(C_CARD), 0);
+    lv_obj_set_style_bg_opa(mu_ta, LV_OPA_COVER, 0);
+    lv_obj_set_style_border_width(mu_ta, 1, 0);
+    lv_obj_set_style_border_color(mu_ta, lv_color_hex(C_LINE), 0);
+    lv_obj_set_style_border_color(mu_ta, lv_color_hex(C_ACCENT), LV_STATE_FOCUSED);
+    lv_obj_set_style_radius(mu_ta, 10, 0);
+    lv_obj_t *go = button(b, 246, 4, 66, 38, I_PLAY "  Phát", &font_vn14, true, NULL);
+    lv_obj_add_event_cb(go, music_go_cb, LV_EVENT_CLICKED, NULL);
+    lv_obj_t *kb = lv_keyboard_create(b);
+    lv_obj_set_size(kb, LCD_H_RES, PAGE_H - 40 - 46);
+    lv_obj_align(kb, LV_ALIGN_TOP_LEFT, 0, 46);
+    lv_keyboard_set_textarea(kb, mu_ta);
+    lv_obj_set_style_bg_color(kb, lv_color_hex(C_BG), 0);
+    lv_obj_set_style_bg_opa(kb, LV_OPA_COVER, 0);
+    lv_obj_set_style_pad_all(kb, 2, 0);
+    lv_obj_set_style_pad_row(kb, 3, 0);
+    lv_obj_set_style_pad_column(kb, 3, 0);
+    lv_obj_set_style_bg_color(kb, lv_color_hex(C_CARD2), LV_PART_ITEMS);
+    lv_obj_set_style_bg_opa(kb, LV_OPA_COVER, LV_PART_ITEMS);
+    lv_obj_set_style_text_color(kb, lv_color_hex(C_TEXT), LV_PART_ITEMS);
+    lv_obj_set_style_border_width(kb, 0, LV_PART_ITEMS);
+    lv_obj_set_style_shadow_width(kb, 0, LV_PART_ITEMS);
+    lv_obj_set_style_radius(kb, 6, LV_PART_ITEMS);
+    lv_obj_set_style_bg_color(kb, lv_color_hex(C_LINE), LV_PART_ITEMS | LV_STATE_CHECKED);   // the control keys
+    lv_obj_add_event_cb(kb, music_go_cb, LV_EVENT_READY, NULL);
+}
+
+// the answer to a request, and the lists arriving
+
+static lv_obj_t *toast_o;
+static lv_timer_t *toast_t;
+
+static void toast_gone(lv_timer_t *t)
+{
+    if (toast_o) lv_obj_delete(toast_o);
+    toast_o = NULL;
+    toast_t = NULL;
+}
+
+static void toast(const char *msg, bool ok)
+{
+    if (toast_t) lv_timer_delete(toast_t);
+    if (toast_o) lv_obj_delete(toast_o);
+    toast_o = lv_obj_create(lv_layer_top());
+    lv_obj_remove_style_all(toast_o);
+    lv_obj_set_style_bg_opa(toast_o, LV_OPA_COVER, 0);
+    lv_obj_set_style_bg_color(toast_o, lv_color_hex(ok ? 0x1F2937 : 0xB91C1C), 0);
+    lv_obj_set_style_radius(toast_o, 12, 0);
+    lv_obj_set_style_pad_all(toast_o, 10, 0);
+    lv_obj_set_size(toast_o, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+    lv_obj_remove_flag(toast_o, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_t *l = label(toast_o, &font_vn14, 0xFFFFFF, msg);
+    lv_obj_set_style_max_width(l, LCD_H_RES - 60, 0);
+    lv_label_set_long_mode(l, LV_LABEL_LONG_WRAP);
+    lv_obj_align(toast_o, LV_ALIGN_BOTTOM_MID, 0, -12);
+    toast_t = lv_timer_create(toast_gone, 2800, NULL);
+    lv_timer_set_repeat_count(toast_t, 1);
+}
+
+static void poll_menu(void)
+{
+    if (link_get_list(&rx_list, &rx_seq) && lst && lst_wait && !strcmp(rx_list.kind, want_kind) &&
+        (list_mode != LM_EPISODES || !strcmp(rx_list.id, want_id))) {
+        memcpy(&lst_data, &rx_list, sizeof lst_data);
+        lst_wait = false;
+        lst_fill();
+    }
+    if (link_get_alarms(&al_data, &al_seq)) {
+        al_have = true;
+        if (sheet_app == APP_ALARM && !al_edit && lst) alarm_fill();
+    }
+    link_res_t r;
+    if (link_get_res(&r, &res_seq)) {
+        toast(r.msg, r.ok);
+        if (!r.ok && lst && lst_wait) { lst_wait = false; lst_say(r.msg); }
+        if (r.ok && play_wait) go_main();
+        play_wait = false;
+    }
+    if (lst && lst_wait && NOW_US() - lst_t0 > 8000000) { lst_wait = false; lst_say("Loa không trả lời. Bản DB-Robot trên loa cần là 1.5.16 trở lên."); }
+}
+
+static void sheet_back(void)
+{
+    if (sheet_app == APP_PODCAST && list_mode == LM_EPISODES) {
+        lv_label_set_text(sheet_title, APPS[APP_PODCAST].label);
+        list_load(LM_PODCAST, NULL);
+        return;
+    }
+    if (sheet_app == APP_ALARM && al_edit) {
+        al_edit = false;
+        lv_obj_clean(sheet_body);
+        lst = scroll_box(sheet_body);
+        alarm_fill();
+        link_request("alarms", NULL);
+        return;
+    }
+    close_sheet();
 }
 
 static void open_sheet(int app)
 {
     if (!sheet) return;
     lv_obj_clean(sheet_body);
+    menu_reset();
     vol_num = vol_bar = bri_num = NULL;
     sheet_app = app;
     lv_label_set_text(sheet_title, APPS[app].label);
     switch (app) {
-    case APP_BRIGHT: sheet_brightness(sheet_body); break;
-    case APP_VOLUME: sheet_volume(sheet_body); update_volume_sheet(); break;
-    case APP_SCREEN: sheet_screen(sheet_body); break;
-    case APP_INFO:   sheet_info(sheet_body); break;
-    case APP_TOUCH:  sheet_touch(sheet_body); break;
+    case APP_SCREEN:  sheet_screen(sheet_body); break;
+    case APP_VOLUME:  sheet_volume(sheet_body); update_volume_sheet(); break;
+    case APP_ALARM:   sheet_alarm(sheet_body); break;
+    case APP_RADIO:   sheet_list(sheet_body, LM_RADIO); break;
+    case APP_PODCAST: sheet_list(sheet_body, LM_PODCAST); break;
+    case APP_MUSIC:   sheet_music(sheet_body); break;
+    case APP_INFO:    sheet_info(sheet_body); break;
     default: break;
     }
     lv_obj_remove_flag(sheet, LV_OBJ_FLAG_HIDDEN);
@@ -1136,13 +1554,29 @@ static void show(page_t p)
     if (p == P_MUSIC) memset(m_level, 0, sizeof m_level), spectrum_timer(NULL);
 }
 
+/* "Tắt nghe" locks the chat: the voice page stays away until the speaker has really stopped
+ * (quiet for 1.5 s), at most 20 s; "sleep" is repeated meanwhile in case a datagram was lost. */
+static bool chat_locked(void)
+{
+    int64_t now = NOW_US();
+    if (now >= lock_until) return false;
+    if (talking()) {
+        lock_quiet_since = 0;
+        if (now >= lock_resend) { link_cmd("sleep"); lock_resend = now + 2000000; }
+    } else {
+        if (!lock_quiet_since) lock_quiet_since = now;
+        if (now - lock_quiet_since > 1500000) { lock_until = 0; return false; }
+    }
+    return true;
+}
+
 static page_t choose_page(void)
 {
     if (net_state() != NET_ONLINE) return P_STATUS;
     if (st.phase == LINK_CHOOSE) return P_CHOOSE;
     if (st.phase != LINK_CONNECTED) return P_STATUS;
     int64_t now = NOW_US();
-    bool quiet = now < suppress_voice_until;     // just told to stop listening
+    bool quiet = chat_locked();     // just told to stop listening
     if (!quiet && talking()) {
         voice_until = now + 6 * 1000000LL;
         return P_VOICE;
@@ -1185,6 +1619,7 @@ static void tick_timer(lv_timer_t *t)
     default: break;
     }
     if (p != P_CHOOSE) c_count = -1;
+    poll_menu();
     update_alarm();
     update_dots();
     if (sheet_app == APP_VOLUME) update_volume_sheet();
@@ -1192,7 +1627,7 @@ static void tick_timer(lv_timer_t *t)
     // someone starts talking to the speaker, or nobody has touched the screen for a while:
     // leave the launcher and its sheets and go back to the main page
     static bool was_talking;
-    bool tk = st.phase == LINK_CONNECTED && talking() && NOW_US() >= suppress_voice_until;
+    bool tk = st.phase == LINK_CONNECTED && talking() && !chat_locked();
     if (tk && !was_talking && (apps_tile_active() || sheet_app >= 0)) go_main();
     was_talking = tk;
     if ((apps_tile_active() || sheet_app >= 0) && lv_display_get_inactive_time(NULL) > 45000) go_main();

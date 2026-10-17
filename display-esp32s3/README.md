@@ -16,12 +16,14 @@ Wi-Fi với loa, tự tìm loa và hiển thị:
 - **Giao diện sáng / tối** giống trang điều khiển của loa (tối đỏ, hoặc sáng xanh dbrobot.vn); màn
   hình nhớ lựa chọn sau khi tắt nguồn.
 - **Menu Ứng dụng**: **vuốt ngang** màn hình chính để mở, như màn hình điện thoại. Chạm biểu tượng:
-  *Giao diện* (đổi sáng/tối), *Độ sáng*, *Âm lượng* loa, *Gọi loa*, *Tìm loa* (chọn loa khác),
-  *Màn hình* (giao diện, xoay 180°, đảo màu, giảm sáng ban đêm), *Thông tin* (loa, Wi-Fi, IP, khởi
-  động lại), *Cảm ứng* (chỉnh lại). Không chạm 45 giây, hoặc khi có người nói chuyện với loa, màn
+  *Màn hình* (độ sáng, giao diện sáng/tối, xoay 180°, đảo màu, giảm sáng ban đêm, chỉnh lại cảm
+  ứng), *Âm lượng* loa, *Báo thức* (danh sách, bật/tắt, thêm, sửa giờ + ngày lặp, xoá), *Radio*,
+  *Podcast* (chương trình → tập), *Nhạc* (gõ tên bài hát không dấu, loa tìm và phát bài khớp nhất),
+  *Gọi loa*, *Tìm loa* (chọn loa khác), *Thông tin* (loa, Wi-Fi, IP, khởi động lại). Không chạm 45
+  giây, hoặc khi có người nói chuyện với loa, màn
   hình tự quay về trang chính.
 
-Cần loa chạy DB-Robot **1.5.15** trở lên (**1.5.16** để dùng nút Tắt nghe / Bật nghe). Một loa có thể có nhiều màn hình; trong trang điều khiển
+Cần loa chạy DB-Robot **1.5.15** trở lên (**1.5.16** để dùng nút Tắt nghe / Bật nghe, Radio, Podcast, Nhạc và Báo thức). Một loa có thể có nhiều màn hình; trong trang điều khiển
 của loa, thẻ **Nhóm loa & màn hình phụ** (tab System) liệt kê các màn hình đang nối.
 
 ## Nối dây
@@ -116,6 +118,12 @@ Màn hình nói chuyện với loa qua UDP cổng **8089** (`link/SpeakerLink.kt
 - Trong lúc phát nhạc, loa gửi phổ âm thanh 15 lần mỗi giây: 2 byte `SP` + 32 byte.
 - Nút trên màn hình gửi `{"t":"cmd","c":"pause|resume|next|stop|vol+|vol-|wake|sleep|mute|unmute|alarm_stop"}`.
   `mute` / `unmute` (1.5.16) là công tắc **Tắt nghe** của trang điều khiển: loa bỏ qua / nghe lại từ đánh thức.
+- Menu Ứng dụng (1.5.16), loa trả lời cho đúng máy hỏi: `{"t":"req","k":"radio"|"podcast"|"alarms"}`,
+  `{"t":"req","k":"episodes","id":<chương trình>}` → `{"t":"list","k","id","items":[{id,n}]}` /
+  `{"t":"alarms","alarms":[{id,on,time,days,label}],"next"}`; `{"t":"play","k":"radio","id"}`,
+  `{"k":"episode","n"}`, `{"k":"music","q"}` → `{"t":"res","ok","msg"}`;
+  `{"t":"al","op":"toggle"|"save"|"del",...}` → `alarms`. Loa gọi cùng API của trang điều khiển
+  (127.0.0.1:8088), không có đường tắt riêng.
 
 ## Build từ mã nguồn
 

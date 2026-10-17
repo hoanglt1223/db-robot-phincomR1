@@ -6,7 +6,6 @@ import info.dourok.voicebot.alarm.AlarmBook
 import info.dourok.voicebot.alarm.AlarmRinger
 import info.dourok.voicebot.alarm.AlarmScheduler
 import info.dourok.voicebot.data.Settings
-import info.dourok.voicebot.domain.voice.AppLog
 import info.dourok.voicebot.domain.voice.ConversationLog
 import info.dourok.voicebot.domain.voice.VoiceCommands
 import info.dourok.voicebot.domain.voice.VoiceDebugState
@@ -144,9 +143,6 @@ object SpeakerLink {
         when (c) {
             "wake" -> VoiceCommands.flow.tryEmit(VoiceCommands.Command.WAKE)
             "sleep" -> VoiceCommands.flow.tryEmit(VoiceCommands.Command.SLEEP)
-            // "Tắt nghe" / "Bật nghe" on the display: the same switch as the one on the control panel
-            "mute" -> { VoiceGate.paused = true; AppLog.i("Tắt nghe (từ màn hình phụ)") }
-            "unmute" -> { VoiceGate.paused = false; AppLog.i("Nghe lại từ đánh thức (từ màn hình phụ)") }
             "pause" -> LocalMusicPlayer.pause()
             "resume" -> LocalMusicPlayer.resume()
             "next" -> LocalMusicPlayer.next()

@@ -30,6 +30,9 @@ static int s_sock = -1;
 static struct sockaddr_in s_peer;    // the speaker we follow
 static volatile bool s_research;
 static char s_cur_id[48];
+static link_list_t s_list;
+static link_alarms_t s_alarms;
+static link_res_t s_res;
 
 #define now_us() esp_timer_get_time()
 
@@ -130,6 +133,42 @@ static void parse_state(cJSON *j)
     s->got_us = now_us();
     s->phase = LINK_CONNECTED;
     s->seq++;
+}
+
+static void parse_list(const cJSON *j)
+{
+    link_list_t *l = &s_list;
+    copy(l->kind, sizeof l->kind, j, "k");
+    copy(l->id, sizeof l->id, j, "id");
+    l->count = 0;
+    const cJSON *a = cJSON_GetObjectItemCaseSensitive(j, "items"), *o;
+    cJSON_ArrayForEach(o, a) {
+        if (l->count >= LINK_LIST_MAX) break;
+        copy(l->it[l->count].id, sizeof l->it[0].id, o, "id");
+        copy(l->it[l->count].n, sizeof l->it[0].n, o, "n");
+        l->count++;
+    }
+    l->seq++;
+}
+
+static void parse_alarms(const cJSON *j)
+{
+    link_alarms_t *l = &s_alarms;
+    l->count = 0;
+    const cJSON *a = cJSON_GetObjectItemCaseSensitive(j, "alarms"), *o;
+    cJSON_ArrayForEach(o, a) {
+        if (l->count >= LINK_ALARM_MAX) break;
+        li_alarm_t *x = &l->a[l->count++];
+        copy(x->id, sizeof x->id, o, "id");
+        copy(x->time, sizeof x->time, o, "time");
+        copy(x->label, sizeof x->label, o, "label");
+        x->on = flag(o, "on");
+        x->days = 0;
+        const cJSON *d = cJSON_GetObjectItemCaseSensitive(o, "days"), *v;
+        cJSON_ArrayForEach(v, d) if (cJSON_IsNumber(v) && v->valueint >= 0 && v->valueint < 7) x->days |= 1 << v->valueint;
+    }
+    copy(l->next, sizeof l->next, j, "next");
+    l->seq++;
 }
 
 static void set_phase(link_phase_t p)
@@ -300,6 +339,16 @@ static void link_task(void *arg)
                 xSemaphoreTake(s_mx, portMAX_DELAY);
                 parse_state(j);
                 xSemaphoreGive(s_mx);
+            } else if (mode == FOLLOW && from.sin_addr.s_addr == s_peer.sin_addr.s_addr) {
+                xSemaphoreTake(s_mx, portMAX_DELAY);
+                if (!strcmp(ty->valuestring, "list")) parse_list(j);
+                else if (!strcmp(ty->valuestring, "alarms")) parse_alarms(j);
+                else if (!strcmp(ty->valuestring, "res")) {
+                    s_res.ok = flag(j, "ok");
+                    copy(s_res.msg, sizeof s_res.msg, j, "msg");
+                    s_res.seq++;
+                }
+                xSemaphoreGive(s_mx);
             }
         }
         cJSON_Delete(j);
@@ -361,3 +410,89 @@ void link_cmd(const char *c)
     snprintf(t, sizeof t, "{\"t\":\"cmd\",\"c\":\"%s\"}", c);
     send_to(&s_peer, t);
 }
+
+/* ── the menu's requests ── */
+
+static void send_obj(cJSON *o)
+{
+    char *t = cJSON_PrintUnformatted(o);
+    if (s_peer.sin_addr.s_addr && t) send_to(&s_peer, t);
+    cJSON_free(t);
+    cJSON_Delete(o);
+}
+
+static cJSON *msg(const char *t, const char *k)
+{
+    cJSON *o = cJSON_CreateObject();
+    cJSON_AddStringToObject(o, "t", t);
+    if (k) cJSON_AddStringToObject(o, "k", k);
+    return o;
+}
+
+void link_request(const char *kind, const char *id)
+{
+    cJSON *o = msg("req", kind);
+    if (id) cJSON_AddStringToObject(o, "id", id);
+    send_obj(o);
+}
+
+void link_play_radio(const char *id)
+{
+    cJSON *o = msg("play", "radio");
+    cJSON_AddStringToObject(o, "id", id);
+    send_obj(o);
+}
+
+void link_play_episode(int n)
+{
+    cJSON *o = msg("play", "episode");
+    cJSON_AddNumberToObject(o, "n", n);
+    send_obj(o);
+}
+
+void link_play_music(const char *query)
+{
+    cJSON *o = msg("play", "music");
+    cJSON_AddStringToObject(o, "q", query);
+    send_obj(o);
+}
+
+static cJSON *al_msg(const char *op, const char *id)
+{
+    cJSON *o = msg("al", NULL);
+    cJSON_AddStringToObject(o, "op", op);
+    cJSON_AddStringToObject(o, "id", id ? id : "");
+    return o;
+}
+
+void link_alarm_toggle(const char *id, bool on)
+{
+    cJSON *o = al_msg("toggle", id);
+    cJSON_AddBoolToObject(o, "on", on);
+    send_obj(o);
+}
+
+void link_alarm_save(const char *id, const char *time, uint8_t days, const char *label)
+{
+    cJSON *o = al_msg("save", id);
+    cJSON_AddStringToObject(o, "time", time);
+    cJSON *d = cJSON_AddArrayToObject(o, "days");
+    for (int i = 0; i < 7; i++) if (days & (1 << i)) cJSON_AddItemToArray(d, cJSON_CreateNumber(i));
+    cJSON_AddStringToObject(o, "label", label ? label : "");
+    send_obj(o);
+}
+
+void link_alarm_del(const char *id) { send_obj(al_msg("del", id)); }
+
+static bool take(const void *src, void *dst, size_t n, const uint32_t *srcseq, uint32_t *seq)
+{
+    bool ch = false;
+    xSemaphoreTake(s_mx, portMAX_DELAY);
+    if (*srcseq != *seq) { memcpy(dst, src, n); *seq = *srcseq; ch = true; }
+    xSemaphoreGive(s_mx);
+    return ch;
+}
+
+bool link_get_list(link_list_t *out, uint32_t *seq) { return take(&s_list, out, sizeof *out, &s_list.seq, seq); }
+bool link_get_alarms(link_alarms_t *out, uint32_t *seq) { return take(&s_alarms, out, sizeof *out, &s_alarms.seq, seq); }
+bool link_get_res(link_res_t *out, uint32_t *seq) { return take(&s_res, out, sizeof *out, &s_res.seq, seq); }
