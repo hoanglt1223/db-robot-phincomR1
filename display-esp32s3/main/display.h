@@ -8,5 +8,6 @@ void display_unlock(void);
 void display_backlight(int percent);
 lv_display_t *display_get(void);
 void display_touch_enable(bool on);   // off while the calibration reads the panel itself
-void display_set_flip(bool flip);     // turn the landscape picture upside down
+void display_set_orient(int q);       // 0 landscape, 1 portrait, 2 landscape upside down, 3 portrait the other way
+bool display_portrait(void);
 void display_set_invert(bool on);

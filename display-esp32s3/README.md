@@ -21,7 +21,7 @@ Wi-Fi với loa, tự tìm loa và hiển thị:
   vào mạng mới; sai mật khẩu thì sau chừng 25 giây màn hình phát Wi-Fi `DBR1-Display-xxxx` để cài
   lại), *Báo thức* (danh sách, bật/tắt, thêm, sửa giờ + ngày lặp, xoá), *Radio*, *Nhạc* (gõ tên
   bài hát không dấu, loa tìm và phát bài khớp nhất), *Podcast* (chương trình → tập), *Cài đặt*
-  (âm lượng loa, độ sáng, giao diện sáng/tối, xoay 180°, đảo màu, giảm sáng ban đêm, chỉnh lại cảm
+  (âm lượng loa, độ sáng, giao diện sáng/tối, xoay 90° (4 hướng, ngang hoặc dọc), đảo màu, giảm sáng ban đêm, chỉnh lại cảm
   ứng) và *Thông tin* (loa, Wi-Fi, IP, khởi động lại). Không chạm 45 giây, hoặc khi có người nói
   chuyện với loa, màn hình tự quay về trang chính.
 
@@ -87,7 +87,7 @@ Khi đã vào Wi-Fi nhà, trang cài đặt vẫn mở được ở địa chỉ
 đang tìm loa, hoặc xem trong router):
 
 - Tên màn hình, loa cần theo, **IP loa cố định** (khi router chặn gói tin tìm kiếm).
-- **Chip màn hình** ST7789 / ILI9341, **Đảo màu**, **Đổi đỏ ↔ xanh dương**, **Xoay 180°**,
+- **Chip màn hình** ST7789 / ILI9341, **Đảo màu**, **Đổi đỏ ↔ xanh dương**, **Xoay 90°**,
   **Lật ngang**, **Độ sáng**, **Giảm sáng ban đêm** (22:00–6:00).
 - **Hiệu chỉnh cảm ứng** lại.
 
@@ -100,7 +100,7 @@ DBR1-Display-XXXX (vẫn thử Wi-Fi cũ ở nền) để bạn sửa.
 |---|---|
 | Màu bị âm bản (nền trắng, chữ đen) | bật/tắt **Đảo màu** |
 | Màu xanh dương thành đỏ | bật **Đổi đỏ ↔ xanh dương** |
-| Hình bị lộn ngược | bật **Xoay 180°** |
+| Hình bị lộn ngược hoặc muốn dựng đứng | Cài đặt › **Xoay 90°**, chạm tới khi đúng hướng (chạm tự đúng theo hướng) |
 | Chữ bị ngược như trong gương | bật **Lật ngang** |
 | Hình nhiễu, lệch, chỉ một phần màn hình | thử chip **ILI9341** (nhiều màn 2.8" bán là ST7789 nhưng thật ra là ILI9341) |
 | Chạm sai chỗ | **Hiệu chỉnh cảm ứng** |

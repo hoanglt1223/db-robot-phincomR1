@@ -13,7 +13,7 @@ typedef struct {
     uint8_t lcd_type;     // LCD_ST7789 / LCD_ILI9341
     uint8_t invert;       // colour inversion (most ST7789 panels need it on)
     uint8_t bgr;          // red and blue swapped
-    uint8_t rot180;       // turn the picture upside down
+    uint8_t rot180;       // old "turn upside down" switch: only read to migrate to `orient`
     uint8_t mirror;       // mirror left-right (for odd panels)
     uint8_t bright;       // 5..100 %
     uint8_t night_dim;    // dim between 22:00 and 06:00
@@ -22,6 +22,8 @@ typedef struct {
     uint8_t want_cal;     // run the calibration on the next start
     int16_t cal_x0, cal_x1, cal_y0, cal_y1;   // raw readings at screen x=CAL_A/CAL_B, y=CAL_A/CAL_C
     uint8_t light;        // light theme (0 = dark); added after v1.5.15, keep it last
+    uint8_t orient;       // quarter turns of the picture: 0 landscape, 1 portrait, 2 landscape upside down, 3 portrait the other way (v1.5.27)
+    uint8_t spare;        // keeps the struct longer than the one a firmware before 1.5.27 saved
 } cfg_t;
 
 #define CAL_A 30

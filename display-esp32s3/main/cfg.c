@@ -33,8 +33,13 @@ void cfg_load(void)
     if (nvs_get_blob(h, "cfg", &b, &n) == ESP_OK && n >= offsetof(blob_t, c) + offsetof(cfg_t, light) && b.ver == CFG_VER) {
         cfg_t keep = g_cfg;
         g_cfg = b.c;
-        if (n < sizeof b) g_cfg.light = keep.light;
+        if (n < sizeof b) {
+            if (n <= offsetof(blob_t, c) + offsetof(cfg_t, light)) g_cfg.light = keep.light;   // before 1.5.16
+            // saved by a firmware before 1.5.27: the old "upside down" switch becomes a landscape orientation
+            g_cfg.orient = g_cfg.rot180 ? 2 : 0;
+        }
     }
+    if (g_cfg.orient > 3) g_cfg.orient = 0;
     nvs_close(h);
     if (g_cfg.bright < 5 || g_cfg.bright > 100) g_cfg.bright = 80;
 }

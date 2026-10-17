@@ -35,7 +35,7 @@ static esp_err_t get_cfg(httpd_req_t *r)
     cJSON_AddNumberToObject(o, "br", g_cfg.bright);
     cJSON_AddBoolToObject(o, "inv", g_cfg.invert);
     cJSON_AddBoolToObject(o, "bgr", g_cfg.bgr);
-    cJSON_AddBoolToObject(o, "r180", g_cfg.rot180);
+    cJSON_AddBoolToObject(o, "r180", g_cfg.orient == 2);
     cJSON_AddBoolToObject(o, "mir", g_cfg.mirror);
     cJSON_AddBoolToObject(o, "night", g_cfg.night_dim);
     char ip[16], st[96];
@@ -144,7 +144,10 @@ static esp_err_t post_save(httpd_req_t *r)
     if (field(body, "br", v, sizeof v)) { int b = atoi(v); g_cfg.bright = b < 5 ? 5 : b > 100 ? 100 : b; }
     g_cfg.invert = field(body, "inv", v, sizeof v);
     g_cfg.bgr = field(body, "bgr", v, sizeof v);
-    g_cfg.rot180 = field(body, "r180", v, sizeof v);
+    {   // the page only knows "upside down": leave a portrait orientation alone unless the box was changed
+        bool up = field(body, "r180", v, sizeof v);
+        if (up != (g_cfg.orient == 2)) g_cfg.orient = up ? 2 : 0;
+    }
     g_cfg.mirror = field(body, "mir", v, sizeof v);
     g_cfg.night_dim = field(body, "night", v, sizeof v);
     cfg_save();

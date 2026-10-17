@@ -49,13 +49,20 @@ static void flush_cb(lv_display_t *d, const lv_area_t *a, uint8_t *px)
     esp_lcd_panel_draw_bitmap(s_panel, ra.x1, ra.y1, ra.x2 + 1, ra.y2 + 1, px);
 }
 
-/* 270 = the picture turned clockwise, as the old swap + mirror_x did (so a saved calibration still fits) */
-static lv_display_rotation_t rot_for(bool flip) { return flip ? LV_DISPLAY_ROTATION_90 : LV_DISPLAY_ROTATION_270; }
+/* The picture's orientation, in quarter turns from the first landscape one (the one the touch
+ * calibration is made in): 0 landscape (LVGL 270 = the picture turned clockwise, as the old
+ * swap + mirror_x did), 1 portrait, 2 landscape upside down, 3 portrait the other way. */
+static lv_display_rotation_t rot_for(int q) { return (lv_display_rotation_t)((3 + (q & 3)) & 3); }
 
-void display_set_flip(bool flip)
+void display_set_orient(int q)
 {
-    if (s_disp) lv_display_set_rotation(s_disp, rot_for(flip));
+    if (!s_disp) return;
+    display_lock(-1);
+    lv_display_set_rotation(s_disp, rot_for(q));
+    display_unlock();
 }
+
+bool display_portrait(void) { return s_disp && lv_display_get_horizontal_resolution(s_disp) < lv_display_get_vertical_resolution(s_disp); }
 
 void display_set_invert(bool on)
 {
@@ -75,20 +82,13 @@ static void touch_cb(lv_indev_t *in, lv_indev_data_t *data)
     } else {
         data->state = LV_INDEV_STATE_RELEASED;
     }
-    // LVGL expects the touch point in the panel's own (portrait, 240x320) frame and turns it by the
-    // display rotation. The calibrated touch is already in the landscape picture, so hand LVGL the
-    // portrait point that comes out right.
-    lv_display_rotation_t rot = s_disp ? lv_display_get_rotation(s_disp) : LV_DISPLAY_ROTATION_0;
-    if (rot == LV_DISPLAY_ROTATION_90) {
-        data->point.x = ly;
-        data->point.y = LCD_H_RES - 1 - lx;
-    } else if (rot == LV_DISPLAY_ROTATION_270) {
-        data->point.x = LCD_V_RES - 1 - ly;
-        data->point.y = lx;
-    } else {
-        data->point.x = lx;
-        data->point.y = ly;
-    }
+    // LVGL wants the touch point in the panel's own (portrait, 240x320) frame and turns it by the
+    // display rotation itself, for all four orientations. The calibration is always made in the first
+    // landscape orientation (a 320x240 picture, 270 for LVGL), so (lx, ly) is turned back to the
+    // panel frame the same way for every orientation: the finger stays where it is on the glass,
+    // however the picture is turned.
+    data->point.x = DISPLAY_WIDTH - 1 - ly;
+    data->point.y = lx;
 }
 
 static uint32_t tick_cb(void) { return (uint32_t)(esp_timer_get_time() / 1000); }
@@ -180,7 +180,7 @@ void display_init(void)
     lv_display_set_color_format(s_disp, LV_COLOR_FORMAT_RGB565);
     lv_display_set_buffers(s_disp, b1, b2, sz, LV_DISPLAY_RENDER_MODE_PARTIAL);
     lv_display_set_flush_cb(s_disp, flush_cb);
-    lv_display_set_rotation(s_disp, rot_for(g_cfg.rot180));   // → 320x240 for LVGL
+    lv_display_set_rotation(s_disp, rot_for(g_cfg.orient));   // → 320x240 or 240x320 for LVGL
 
     touch_init(LCD_SPI_HOST);
     lv_indev_t *in = lv_indev_create();

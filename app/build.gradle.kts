@@ -27,8 +27,8 @@ android {
         // One number per release, said in both places and by the git tag. Left at 1 / "1.0" for
         // months, which is how a fix measured on one build gets reported as still broken on
         // another -- nothing on the device could say which binary was running.
-        versionCode = 35
-        versionName = "1.5.26"
+        versionCode = 36
+        versionName = "1.5.27"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 

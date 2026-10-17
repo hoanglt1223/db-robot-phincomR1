@@ -3,6 +3,12 @@
 Mỗi bản một mục `## v<versionName>`. Khi phát hành, đoạn văn dưới mục đó được đưa vào trang Release
 và vào ô "Bản mới nhất" trong trang điều khiển của loa -- viết ngắn, cho người dùng đọc.
 
+## v1.5.27
+
+- Màn hình phụ: xoay đủ 4 hướng (Cài đặt › "Xoay 90°": ngang → dọc → ngang ngược → dọc ngược, mỗi lần chạm xoay thêm 90°). Các trang (đồng hồ, nhạc, trò chuyện, menu, cài đặt, báo thức, Wi-Fi…) tự sắp xếp lại cho màn dọc 240×320.
+- Sửa lỗi chạm bị ngược khi xoay: hiệu chỉnh cảm ứng giờ luôn làm ở một hướng chuẩn rồi tự quy đổi cho mọi hướng, nên xoay thế nào ngón tay vẫn đúng chỗ. Nếu chạm vẫn lệch, vào Cài đặt › "Hiệu chỉnh cảm ứng" làm lại một lần.
+- Sửa nút "Hình" trên trang nhạc đôi khi đổi chữ thành "Tắt nghe" / "Gọi loa".
+
 ## v1.5.26
 
 - Nút "Hình" qua HTTPS (ms.dbrobot.vn): sửa lỗi luồng đứt sau vài giây do mã hoá AES bằng phần cứng thiếu bộ nhớ trong (`esp-aes: Failed to allocate memory`). Màn hình giờ giải mã TLS bằng phần mềm, chậm hơn chút nhưng ổn định. Cần xoá file `sdkconfig` cũ trước khi build lại firmware màn hình.
