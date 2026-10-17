@@ -84,6 +84,28 @@ static int part_len(const char *h, int hdr_end)
 
 static void fail(int gen, const char *m) { if (gen == s_gen) setst(VID_ERROR, m); }
 
+/* Why does the secure connection fail? Repeat the handshake alone and read the TLS error:
+   code = mbedtls error (hex), flags = certificate problems (1 expired, 2 revoked, 4 name, 8 not trusted). */
+static void tls_diag(const char *url, int *code, int *flags)
+{
+    *code = *flags = 0;
+    const char *h = strstr(url, "://");
+    if (!h) return;
+    h += 3;
+    char host[64];
+    int n = 0, port = 443;
+    while (h[n] && h[n] != '/' && h[n] != ':' && n < (int)sizeof host - 1) { host[n] = h[n]; n++; }
+    host[n] = 0;
+    if (h[n] == ':') port = atoi(h + n + 1);
+    esp_tls_cfg_t tc = { .crt_bundle_attach = esp_crt_bundle_attach, .timeout_ms = 8000 };
+    esp_tls_t *t = esp_tls_init();
+    if (!t) return;
+    esp_tls_conn_new_sync(host, n, port, &tc, t);
+    esp_tls_error_handle_t eh = NULL;
+    if (esp_tls_get_error_handle(t, &eh) == ESP_OK && eh) esp_tls_get_and_clear_last_error(eh, code, flags);
+    esp_tls_conn_destroy(t);
+}
+
 static void run(int gen)
 {
     // kept between sessions: allocated once, so the heap does not fragment
@@ -108,9 +130,11 @@ static void run(int gen)
     esp_err_t oe = esp_http_client_open(c, 0);
     if (oe != ESP_OK) {
         const char *hostpart = strstr(s_url, "://");
-        char m[120];
-        snprintf(m, sizeof m, "Không nối được %.28s: %s (mã %d)",
-                 hostpart ? hostpart + 3 : s_url, esp_err_to_name(oe), esp_http_client_get_errno(c));
+        char m[128];
+        int tc = 0, tf = 0;
+        if (!strncmp(s_url, "https://", 8)) tls_diag(s_url, &tc, &tf);
+        snprintf(m, sizeof m, "Không nối được %.26s: %s (mã %d, TLS -0x%x, chứng chỉ 0x%x)",
+                 hostpart ? hostpart + 3 : s_url, esp_err_to_name(oe), esp_http_client_get_errno(c), tc < 0 ? -tc : tc, tf);
         ESP_LOGE(TAG, "%s (url %s)", m, s_url);
         fail(gen, m);
         esp_http_client_cleanup(c);

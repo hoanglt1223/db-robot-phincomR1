@@ -3,6 +3,10 @@
 Mỗi bản một mục `## v<versionName>`. Khi phát hành, đoạn văn dưới mục đó được đưa vào trang Release
 và vào ô "Bản mới nhất" trong trang điều khiển của loa -- viết ngắn, cho người dùng đọc.
 
+## v1.5.23
+
+- Nút "Hình" qua HTTPS: khi bắt tay TLS thất bại, màn hình hiện mã lỗi mbedTLS và cờ chứng chỉ (hết hạn / không tin cậy / sai tên) để biết lý do.
+
 ## v1.5.22
 
 - Nút "Hình": khi không nối được máy chủ nhạc, màn hình hiện rõ tên máy chủ và mã lỗi (để tìm nguyên nhân: DNS, TLS/chứng chỉ, hay máy chủ không mở cổng).
