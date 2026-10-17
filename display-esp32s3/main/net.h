@@ -13,3 +13,9 @@ uint32_t net_broadcast(void);         // subnet broadcast, network byte order; 0
 int net_rssi(void);
 /* JSON array of networks around: [{"s":"ssid","r":-60,"l":1},…] */
 int net_scan_json(char *out, int len);
+
+/* Networks around, scanned in the background (a scan blocks for ~2 s). */
+typedef struct { char ssid[33]; int rssi; bool lock; } wifi_ap_t;
+void net_scan_start(void);
+/* true once the scan started last has finished; fills out[0..*n) */
+bool net_scan_get(wifi_ap_t *out, int *n, int max);

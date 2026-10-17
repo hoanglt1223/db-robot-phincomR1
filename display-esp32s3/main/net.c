@@ -199,6 +199,54 @@ int net_scan_json(char *out, int len)
     return n;
 }
 
+static volatile int s_scan_st;          // 0 idle, 1 running, 2 done
+static wifi_ap_t s_scan_res[16];
+static int s_scan_n;
+
+static void scan_task(void *arg)
+{
+    xSemaphoreTake(s_scan_lock, portMAX_DELAY);
+    int n = 0;
+    wifi_scan_config_t sc = { .show_hidden = false };
+    if (esp_wifi_scan_start(&sc, true) == ESP_OK) {
+        uint16_t cnt = 20;
+        wifi_ap_record_t *rec = calloc(cnt, sizeof *rec);
+        if (rec && esp_wifi_scan_get_ap_records(&cnt, rec) == ESP_OK) {
+            for (int i = 0; i < cnt && n < 16; i++) {
+                if (!rec[i].ssid[0]) continue;
+                bool dup = false;
+                for (int j = 0; j < n; j++) if (!strcmp(s_scan_res[j].ssid, (char *)rec[i].ssid)) dup = true;
+                if (dup) continue;
+                strlcpy(s_scan_res[n].ssid, (char *)rec[i].ssid, sizeof s_scan_res[n].ssid);
+                s_scan_res[n].rssi = rec[i].rssi;
+                s_scan_res[n].lock = rec[i].authmode != WIFI_AUTH_OPEN;
+                n++;
+            }
+        }
+        free(rec);
+    }
+    s_scan_n = n;
+    s_scan_st = 2;
+    xSemaphoreGive(s_scan_lock);
+    vTaskDelete(NULL);
+}
+
+void net_scan_start(void)
+{
+    if (s_scan_st == 1) return;
+    s_scan_st = 1;
+    if (xTaskCreate(scan_task, "scan", 4096, NULL, 4, NULL) != pdPASS) s_scan_st = 2, s_scan_n = 0;
+}
+
+bool net_scan_get(wifi_ap_t *out, int *n, int max)
+{
+    if (s_scan_st != 2) return false;
+    s_scan_st = 0;
+    *n = s_scan_n < max ? s_scan_n : max;
+    memcpy(out, s_scan_res, *n * sizeof *out);
+    return true;
+}
+
 /* Captive DNS: on the setup network every name is 192.168.4.1, so phones open the portal. */
 static void dns_task(void *arg)
 {
