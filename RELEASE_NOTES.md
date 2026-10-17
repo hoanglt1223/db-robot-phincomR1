@@ -3,6 +3,10 @@
 Mỗi bản một mục `## v<versionName>`. Khi phát hành, đoạn văn dưới mục đó được đưa vào trang Release
 và vào ô "Bản mới nhất" trong trang điều khiển của loa -- viết ngắn, cho người dùng đọc.
 
+## v1.5.28
+
+- Màn hình phụ xoay dọc: đồng hồ lật nằm một hàng, tự co theo chiều ngang màn hình; thời tiết xếp thành cột giữa màn hình (biểu tượng + nhiệt độ, rồi mô tả và thành phố) nên không còn bị tràn mất biểu tượng.
+
 ## v1.5.27
 
 - Màn hình phụ: xoay đủ 4 hướng (Cài đặt › "Xoay 90°": ngang → dọc → ngang ngược → dọc ngược, mỗi lần chạm xoay thêm 90°). Các trang (đồng hồ, nhạc, trò chuyện, menu, cài đặt, báo thức, Wi-Fi…) tự sắp xếp lại cho màn dọc 240×320.

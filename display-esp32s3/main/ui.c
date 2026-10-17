@@ -832,7 +832,8 @@ static void mute_cb(lv_event_t *e) { link_cmd(st.mute ? "unmute" : "mute"); }
 
 /* ── the flip clock: four cards, each with a split line; a digit that changes folds over ── */
 
-#define FW 52
+static int fw = 52;                 // card width: fixed on the landscape screen, shrunk to the width in portrait
+#define FW fw
 #define FH 70
 #define FHALF (FH / 2)
 typedef struct { lv_obj_t *top, *bot, *ft, *fb, *lt, *lb, *lft, *lfb; char cur; } flip_t;
@@ -911,12 +912,17 @@ static void build_flip(lv_obj_t *p, int y)
 {
     fc_ly = (FH - lv_font_get_line_height(&font_flip64)) / 2;
     int x[4] = { 39, 97, 171, 229 }, cy[4] = { y, y, y, y };
-    if (PORT) {   // two rows: the hour over the minutes
-        const int x0 = (LCD_H_RES - 2 * FW - 8) / 2;
-        x[0] = x[2] = x0;
-        x[1] = x[3] = x0 + FW + 8;
-        cy[0] = cy[1] = y + 4;
-        cy[2] = cy[3] = y + 4 + FH + 8;
+    int dot_x = 156;
+    fw = 52;
+    if (PORT) {   // one row, the four cards (and the two dots between the hours and the minutes) share the width
+        const int m = 6, gap = 3, mid = 22;                       // side margin, between the two digits of a pair, around the dots
+        fw = (LCD_H_RES - 2 * m - 2 * gap - mid) / 4;
+        x[0] = m;
+        x[1] = x[0] + fw + gap;
+        x[2] = x[1] + fw + mid;
+        x[3] = x[2] + fw + gap;
+        dot_x = x[1] + fw + (mid - 8) / 2;
+        for (int i = 0; i < 4; i++) cy[i] = y + 14;
     }
     for (int i = 0; i < 4; i++) {
         lv_anim_delete(&fc[i], flip_anim_cb);
@@ -942,11 +948,10 @@ static void build_flip(lv_obj_t *p, int y)
         flip_set(f, '-');
     }
     for (int i = 0; i < 2; i++) {
-        fc_dot[i] = box(p, 156, y + FH / 2 - 15 + i * 24, 8, 8);
+        fc_dot[i] = box(p, dot_x, cy[0] + FH / 2 - 15 + i * 24, 8, 8);
         lv_obj_set_style_radius(fc_dot[i], 4, 0);
         lv_obj_set_style_bg_opa(fc_dot[i], LV_OPA_COVER, 0);
         lv_obj_set_style_bg_color(fc_dot[i], lv_color_hex(C_ORANGE), 0);
-        if (PORT) lv_obj_add_flag(fc_dot[i], LV_OBJ_FLAG_HIDDEN);
     }
 }
 
@@ -954,10 +959,32 @@ static void build_idle(lv_obj_t *p)
 {
     build_flip(p, 0);
     i_date = label(p, &font_vn18, C_MUTED, "");
-    lv_obj_align(i_date, LV_ALIGN_TOP_MID, 0, PORT ? 158 : 72);
+    lv_obj_align(i_date, LV_ALIGN_TOP_MID, 0, PORT ? 96 : 72);
     if (PORT) lv_obj_set_style_text_font(i_date, &font_vn14, 0);   // the long date does not fit 240 px in the big font
 
-    lv_obj_t *w = box(p, 0, PORT ? 180 : 98, LCD_H_RES, 44);
+    if (PORT) {
+        // portrait: the weather is a centred column (icon and temperature, then the description and the city)
+        lv_obj_t *w = box(p, 0, 124, LCD_H_RES, 92);
+        lv_obj_set_flex_flow(w, LV_FLEX_FLOW_COLUMN);
+        lv_obj_set_flex_align(w, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+        lv_obj_set_style_pad_row(w, 2, 0);
+        lv_obj_t *row = box(w, 0, 0, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+        lv_obj_set_flex_flow(row, LV_FLEX_FLOW_ROW);
+        lv_obj_set_flex_align(row, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+        lv_obj_set_style_pad_column(row, 12, 0);
+        i_wicon = label(row, &font_icon40, C_ORANGE, "");
+        i_temp = label(row, &font_vn24, C_TEXT, "");
+        i_wdesc = label(w, &font_vn14, C_TEXT, "");
+        i_city = label(w, &font_vn14, C_MUTED, "");
+        lv_obj_t *tl[2] = { i_wdesc, i_city };
+        for (int i = 0; i < 2; i++) {      // one line each, centred, cut with "…" when too long
+            lv_obj_set_width(tl[i], LCD_H_RES - 20);
+            lv_obj_set_height(tl[i], 18);
+            lv_obj_set_style_text_align(tl[i], LV_TEXT_ALIGN_CENTER, 0);
+            lv_label_set_long_mode(tl[i], LV_LABEL_LONG_DOT);
+        }
+    } else {
+    lv_obj_t *w = box(p, 0, 98, LCD_H_RES, 44);
     lv_obj_set_flex_flow(w, LV_FLEX_FLOW_ROW);
     lv_obj_set_flex_align(w, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
     lv_obj_set_style_pad_column(w, 10, 0);
@@ -967,13 +994,14 @@ static void build_idle(lv_obj_t *p)
     lv_obj_set_flex_flow(col, LV_FLEX_FLOW_COLUMN);
     i_wdesc = label(col, &font_vn14, C_TEXT, "");
     i_city = label(col, &font_vn14, C_MUTED, "");
+    }
 
     i_info = label(p, &font_vn14, C_MUTED, "");
     lv_obj_set_width(i_info, LCD_H_RES - 20);
     lv_obj_set_style_text_align(i_info, LV_TEXT_ALIGN_CENTER, 0);
     lv_label_set_long_mode(i_info, LV_LABEL_LONG_DOT);
     if (PORT) lv_obj_set_height(i_info, 18);       // one line, cut with "…" (a label of free height would wrap)
-    lv_obj_align(i_info, LV_ALIGN_TOP_MID, 0, PORT ? 228 : 144);
+    lv_obj_align(i_info, LV_ALIGN_TOP_MID, 0, PORT ? 226 : 144);
 
     // the panel's two floating buttons: Tắt nghe / Bật nghe on the left, Gọi loa on the right
     i_mute = button(p, PORT ? 4 : 48, PORT ? 254 : 176, 108, 32, I_MICOFF " Tắt nghe", &font_vn14, false, NULL);
