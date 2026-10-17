@@ -143,9 +143,10 @@ object SpeakerLink {
                     "req", "play", "al" -> worker.execute {
                         try {
                             handleApi(msg, from)
-                        } catch (e: Exception) {
+                        } catch (e: Throwable) {
                             Log.e(TAG, "api ${msg.optString("t")}: ${e.message}")
-                            send(from, res(false, "Loa không trả lời được"))
+                            info.dourok.voicebot.domain.voice.AppLog.i("Màn hình phụ hỏi lỗi: ${e}")
+                            send(from, res(false, "Lỗi trên loa: " + tail(e.toString(), 60)))
                         }
                     }
                 }
@@ -212,13 +213,22 @@ object SpeakerLink {
         }
     }
 
+    /** One datagram must stay under ~1400 bytes: an ESP32 drops anything bigger (no IP reassembly in older builds). */
     private fun list(kind: String, id: String, rows: List<Pair<String, String>>): String {
         val items = JSONArray()
-        rows.take(20).forEach { (i, n) -> items.put(JSONObject().put("id", i).put("n", tail(n, 40))) }
+        var used = 80 + id.length
+        for ((i, n) in rows.take(20)) {
+            val o = JSONObject().put("id", i.take(32)).put("n", tail(n, 34))
+            val len = o.toString().toByteArray(Charsets.UTF_8).size + 1
+            if (used + len > 1150) break
+            used += len
+            items.put(o)
+        }
         return JSONObject().put("t", "list").put("k", kind).put("id", id).put("items", items).toString()
     }
 
     private fun handleApi(msg: JSONObject, from: InetSocketAddress) {
+        AppLog.i("Màn hình phụ hỏi: ${msg.optString("t")} ${msg.optString("k")}${msg.optString("op")}")
         when (msg.optString("t")) {
             "req" -> when (val k = msg.optString("k")) {
                 "radio" -> {
@@ -307,7 +317,7 @@ object SpeakerLink {
         AlarmScheduler.alarms().forEach {
             val days = JSONArray()
             for (i in 0 until 7) if ((it.days and (1 shl i)) != 0) days.put(i)
-            a.put(JSONObject().put("id", it.id).put("on", it.enabled).put("time", it.time()).put("days", days).put("label", it.label))
+            a.put(JSONObject().put("id", it.id).put("on", it.enabled).put("time", it.time()).put("days", days).put("label", it.label.trim().take(14)))
         }
         val o = JSONObject().put("t", "alarms").put("alarms", a)
         AlarmScheduler.next()?.let { (_, at) -> o.put("next", AlarmBook.whenText(at, TimeZone.getDefault())) }

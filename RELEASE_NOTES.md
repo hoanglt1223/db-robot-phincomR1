@@ -3,6 +3,10 @@
 Mỗi bản một mục `## v<versionName>`. Khi phát hành, đoạn văn dưới mục đó được đưa vào trang Release
 và vào ô "Bản mới nhất" trong trang điều khiển của loa -- viết ngắn, cho người dùng đọc.
 
+## v1.5.18
+
+- **Sửa màn hình phụ không nhận được Radio, Podcast, Nhạc, Báo thức từ loa**: loa trả lời bằng gói UDP nhỏ gọn (dưới ~1,2 KB, ESP32 bỏ gói lớn hơn), bắt cả lỗi nặng để luôn có phản hồi và ghi vào Nhật ký ("Màn hình phụ hỏi: …"). Cần cài APK 1.5.18 lên loa cùng firmware màn hình 1.5.18.
+
 ## v1.5.17
 
 - **Màn hình phụ — menu Ứng dụng** (vuốt ngang để mở) có 8 ứng dụng: **Tìm loa**, **Wifi** (quét và nối sang Wi-Fi khác, nhập mật khẩu bằng bàn phím trên màn hình), **Báo thức** (thêm, bật/tắt, sửa giờ và ngày lặp, xoá), **Radio**, **Nhạc** (gõ tên bài hát, loa tìm và phát), **Podcast** (chọn chương trình rồi chọn tập), **Cài đặt** (âm lượng loa, độ sáng, giao diện sáng/tối, xoay, đảo màu, giảm sáng ban đêm, chỉnh cảm ứng) và **Thông tin**. Radio, Nhạc, Podcast và Báo thức cần loa 1.5.17.

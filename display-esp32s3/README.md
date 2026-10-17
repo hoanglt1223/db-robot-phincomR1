@@ -25,7 +25,7 @@ Wi-Fi với loa, tự tìm loa và hiển thị:
   ứng) và *Thông tin* (loa, Wi-Fi, IP, khởi động lại). Không chạm 45 giây, hoặc khi có người nói
   chuyện với loa, màn hình tự quay về trang chính.
 
-Cần loa chạy DB-Robot **1.5.15** trở lên (**1.5.16** để dùng nút Tắt nghe / Bật nghe; **1.5.17** để dùng Radio, Podcast, Nhạc và Báo thức). Một loa có thể có nhiều màn hình; trong trang điều khiển
+Cần loa chạy DB-Robot **1.5.15** trở lên (**1.5.16** để dùng nút Tắt nghe / Bật nghe; **1.5.18** để dùng Radio, Podcast, Nhạc và Báo thức). Một loa có thể có nhiều màn hình; trong trang điều khiển
 của loa, thẻ **Nhóm loa & màn hình phụ** (tab System) liệt kê các màn hình đang nối.
 
 ## Nối dây

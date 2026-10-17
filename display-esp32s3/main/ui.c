@@ -1249,6 +1249,23 @@ static void menu_reset(void)
     lst_wait = play_wait = al_edit = wf_pw = wf_scanning = false;
 }
 
+static void lst_say(const char *text);
+
+/* Radio, podcasts, music and alarms need the speaker app 1.5.18 or newer (older ones ignore the requests). */
+static bool speaker_old(void)
+{
+    int a = 0, b = 0, c = 0;
+    if (sscanf(st.ver, "%d.%d.%d", &a, &b, &c) < 2) return false;     // unknown: just try
+    return a * 10000 + b * 100 + c < 10518;
+}
+
+static void say_old(void)
+{
+    char t[200];
+    snprintf(t, sizeof t, "Loa đang chạy DB-Robot %s. Cần cập nhật loa lên 1.5.18 trở lên để dùng mục này.", st.ver);
+    lst_say(t);
+}
+
 static lv_obj_t *scroll_box(lv_obj_t *b)
 {
     lv_obj_t *o = box(b, 0, 0, LCD_H_RES, PAGE_H - 40);
@@ -1327,6 +1344,7 @@ static void list_load(int mode, const char *id)
     list_mode = mode;
     snprintf(want_kind, sizeof want_kind, "%s", mode == LM_RADIO ? "radio" : mode == LM_PODCAST ? "podcast" : "episodes");
     snprintf(want_id, sizeof want_id, "%s", id ? id : "");
+    if (speaker_old()) { say_old(); lst_wait = false; return; }
     lst_say("Đang tải…");
     lst_wait = true;
     lst_t0 = NOW_US();
@@ -1403,8 +1421,11 @@ static void sheet_alarm(lv_obj_t *b)
 {
     lst = scroll_box(b);
     al_edit = false;
+    if (speaker_old()) { say_old(); return; }
     if (al_have) alarm_fill(); else lst_say("Đang tải…");
     link_request("alarms", NULL);
+    lst_wait = !al_have;
+    lst_t0 = NOW_US();
 }
 
 static lv_obj_t *ed_h, *ed_m, *ed_day[7];
@@ -1514,6 +1535,7 @@ static void music_go(void)
     if (!mu_ta) return;
     const char *q = lv_textarea_get_text(mu_ta);
     if (!q[0]) { toast("Gõ tên bài hát hoặc ca sĩ", false); return; }
+    if (speaker_old()) { toast("Loa cần DB-Robot 1.5.18 trở lên", false); return; }
     link_play_music(q);
     play_wait = true;
     toast("Đang tìm bài…", true);
@@ -1735,6 +1757,7 @@ static void poll_menu(void)
     }
     if (link_get_alarms(&al_data, &al_seq)) {
         al_have = true;
+        if (sheet_app == APP_ALARM) lst_wait = false;
         if (sheet_app == APP_ALARM && !al_edit && lst) alarm_fill();
     }
     if (wf_scanning && lst && !wf_pw && sheet_app == APP_WIFI && net_scan_get(wf_ap, &wf_n, 16)) {
@@ -1748,7 +1771,7 @@ static void poll_menu(void)
         if (r.ok && play_wait) go_main();
         play_wait = false;
     }
-    if (lst && lst_wait && NOW_US() - lst_t0 > 8000000) { lst_wait = false; lst_say("Loa không trả lời. Bản DB-Robot trên loa cần là 1.5.16 trở lên."); }
+    if (lst && lst_wait && NOW_US() - lst_t0 > 8000000) { lst_wait = false; char t[200]; snprintf(t, sizeof t, "Loa (DB-Robot %s) không trả lời. Cần bản 1.5.18 trở lên; kiểm tra loa đang bật và cùng mạng.", st.ver); lst_say(t); }
 }
 
 static void sheet_back(void)
