@@ -83,9 +83,20 @@ static void fail(int gen, const char *m) { if (gen == s_gen) setst(VID_ERROR, m)
 
 static void run(int gen)
 {
-    uint8_t *buf = heap_caps_malloc(BUF_CAP, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
-    void *pool = heap_caps_malloc(8192, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
-    if (!buf || !pool) { fail(gen, "Hết bộ nhớ"); goto done; }
+    // kept between sessions: allocated once, so the heap does not fragment
+    static uint8_t *buf;
+    static void *pool;
+    if (!buf) buf = heap_caps_malloc(BUF_CAP, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+    if (!pool) pool = heap_caps_malloc(8192, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+    if (!pool) pool = heap_caps_malloc(8192, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);   // slower, but it works
+    if (!buf || !pool) {
+        char m[80];
+        snprintf(m, sizeof m, "Hết bộ nhớ (%s; trống %d KB, PSRAM %d KB)", !buf ? "đệm" : "bảng giải mã",
+                 (int)(heap_caps_get_free_size(MALLOC_CAP_INTERNAL) / 1024),
+                 (int)(heap_caps_get_free_size(MALLOC_CAP_SPIRAM) / 1024));
+        fail(gen, m);
+        return;
+    }
 
     esp_http_client_config_t cfg = { .url = s_url, .timeout_ms = 10000, .buffer_size = 1024, .buffer_size_tx = 512 };
     if (!strncmp(s_url, "https://", 8)) cfg.crt_bundle_attach = esp_crt_bundle_attach;
@@ -134,9 +145,7 @@ static void run(int gen)
     }
     esp_http_client_close(c);
     esp_http_client_cleanup(c);
-done:
-    free(buf);
-    free(pool);
+done:;
 }
 
 static TaskHandle_t s_task;
@@ -156,7 +165,14 @@ void video_start(const char *server, const char *video_id, int start_s)
     if (!s_mx) s_mx = xSemaphoreCreateMutex();
     if (!s_fb[0]) {
         for (int i = 0; i < 3; i++) s_fb[i] = heap_caps_calloc(W * H, 2, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
-        if (!s_fb[0] || !s_fb[1] || !s_fb[2]) { setst(VID_ERROR, "Hết bộ nhớ"); return; }
+        if (!s_fb[0] || !s_fb[1] || !s_fb[2]) {
+            char m[80];
+            snprintf(m, sizeof m, "Hết bộ nhớ (khung hình; PSRAM trống %d KB)",
+                     (int)(heap_caps_get_free_size(MALLOC_CAP_SPIRAM) / 1024));
+            for (int i = 0; i < 3; i++) { free(s_fb[i]); s_fb[i] = NULL; }
+            setst(VID_ERROR, m);
+            return;
+        }
     }
     s_gen++;
     for (int i = 0; i < 50 && s_running; i++) vTaskDelay(pdMS_TO_TICKS(20));   // the old task leaves first
