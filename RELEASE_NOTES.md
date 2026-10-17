@@ -3,6 +3,14 @@
 Mỗi bản một mục `## v<versionName>`. Khi phát hành, đoạn văn dưới mục đó được đưa vào trang Release
 và vào ô "Bản mới nhất" trong trang điều khiển của loa -- viết ngắn, cho người dùng đọc.
 
+## v1.5.22
+
+- Nút "Hình": khi không nối được máy chủ nhạc, màn hình hiện rõ tên máy chủ và mã lỗi (để tìm nguyên nhân: DNS, TLS/chứng chỉ, hay máy chủ không mở cổng).
+
+## v1.5.21
+
+- **Sửa nút "Hình" báo "Hết bộ nhớ"**: bảng giải mã JPEG xin 8 KB RAM trong liền khối, nhưng RAM trong của ESP32-S3 đang bị chia nhỏ; nay thử RAM trong rồi chuyển sang PSRAM, các bộ đệm được cấp một lần và giữ lại. Thông báo lỗi cho biết bộ đệm nào thiếu và còn bao nhiêu KB.
+
 ## v1.5.20
 
 - **Sửa nút "Hình" báo "Không tạo được luồng"**: luồng tải hình dùng một tác vụ lâu dài có ngăn xếp nằm trong PSRAM (trước đó cần 10 KB RAM trong, đang thiếu), bộ đệm TLS cũng chuyển sang PSRAM. Cần **xoá file `sdkconfig` cũ rồi build lại** để nhận `CONFIG_MBEDTLS_EXTERNAL_MEM_ALLOC`.

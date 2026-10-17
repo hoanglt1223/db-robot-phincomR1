@@ -10,6 +10,8 @@
 #include "esp_heap_caps.h"
 #include "esp_http_client.h"
 #include "esp_crt_bundle.h"
+#include "esp_tls.h"
+#include "esp_log.h"
 #include "rom/tjpgd.h"
 #include "video.h"
 
@@ -17,11 +19,12 @@
 #define H 240
 #define BUF_CAP (64 * 1024)
 
+static const char *TAG = "video";
 static SemaphoreHandle_t s_mx;
 static volatile int s_gen;            // bumped by start/stop: the running task quits when it changes
 static volatile bool s_running;
 static vid_state_t s_state = VID_IDLE;
-static char s_msg[80];
+static char s_msg[128];
 static char s_url[200];
 static uint16_t *s_fb[3];             // decoded frames; s_front is the one the UI may read
 static int s_front;
@@ -102,7 +105,17 @@ static void run(int gen)
     if (!strncmp(s_url, "https://", 8)) cfg.crt_bundle_attach = esp_crt_bundle_attach;
     esp_http_client_handle_t c = esp_http_client_init(&cfg);
     if (!c) { fail(gen, "Không mở được kết nối"); goto done; }
-    if (esp_http_client_open(c, 0) != ESP_OK) { fail(gen, "Không nối được máy chủ nhạc"); esp_http_client_cleanup(c); goto done; }
+    esp_err_t oe = esp_http_client_open(c, 0);
+    if (oe != ESP_OK) {
+        const char *hostpart = strstr(s_url, "://");
+        char m[120];
+        snprintf(m, sizeof m, "Không nối được %.28s: %s (mã %d)",
+                 hostpart ? hostpart + 3 : s_url, esp_err_to_name(oe), esp_http_client_get_errno(c));
+        ESP_LOGE(TAG, "%s (url %s)", m, s_url);
+        fail(gen, m);
+        esp_http_client_cleanup(c);
+        goto done;
+    }
     esp_http_client_fetch_headers(c);
     int code = esp_http_client_get_status_code(c);
     if (code != 200) {

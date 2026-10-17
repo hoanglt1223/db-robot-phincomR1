@@ -695,7 +695,7 @@ static void update_video(void)
     if (!v_layer) return;
     // another song, nothing playing, or the alarm: the picture is no longer the right one
     if (!st.has_m || strcmp(st.vid, v_vid) || st.al_ring[0]) { close_video(); return; }
-    char m[80];
+    char m[128];
     vid_state_t vs = video_state(m, sizeof m);
     const uint16_t *f = video_frame(&v_seq);
     if (f) {
