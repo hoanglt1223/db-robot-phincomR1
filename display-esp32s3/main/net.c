@@ -118,8 +118,8 @@ void net_init(void)
 
     if (g_cfg.ssid[0]) {
         wifi_config_t sc = { 0 };
-        strncpy((char *)sc.sta.ssid, g_cfg.ssid, sizeof sc.sta.ssid);
-        strncpy((char *)sc.sta.password, g_cfg.pass, sizeof sc.sta.password);
+        strlcpy((char *)sc.sta.ssid, g_cfg.ssid, sizeof sc.sta.ssid);
+        strlcpy((char *)sc.sta.password, g_cfg.pass, sizeof sc.sta.password);
         sc.sta.threshold.authmode = g_cfg.pass[0] ? WIFI_AUTH_WEP : WIFI_AUTH_OPEN;
         sc.sta.scan_method = WIFI_ALL_CHANNEL_SCAN;
         sc.sta.sort_method = WIFI_CONNECT_AP_BY_SIGNAL;

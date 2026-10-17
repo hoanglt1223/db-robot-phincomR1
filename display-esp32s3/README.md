@@ -5,14 +5,23 @@ Loa Phicomm R1 không có màn hình. Màn hình phụ là một mạch **ESP32-
 Wi-Fi với loa, tự tìm loa và hiển thị:
 
 - **Trò chuyện**: khuôn mặt theo trạng thái (đang nghe / đang nói) và cảm xúc của trợ lý, câu bạn
-  vừa nói và câu trả lời của loa.
+  vừa nói và câu trả lời của loa. Nút **Tắt nghe** kết thúc cuộc nói chuyện, quay về màn hình chính
+  và loa thôi nghe từ đánh thức.
 - **Nhạc**: tên bài, ca sĩ, nguồn (Nhạc / YouTube / Radio / Podcast), phổ âm thanh 32 cột, thời gian;
   nút giảm âm, tạm dừng/tiếp, bài kế, dừng, tăng âm.
-- **Lúc rảnh**: đồng hồ lớn, thứ ngày, thời tiết, báo thức sắp tới, nút **Gọi loa**.
+- **Lúc rảnh**: đồng hồ lớn, thứ ngày, thời tiết, báo thức sắp tới, nút **Tắt nghe / Bật nghe** và **Gọi loa**.
 - **Báo thức đang reo**: toàn màn hình, nút **TẮT BÁO THỨC**.
-- Thanh trên cùng: tên loa, số loa trong nhóm, âm lượng, giờ.
+- Thanh trên cùng: tên loa, số loa trong nhóm, âm lượng, giờ, và nút **mặt trời / mặt trăng** để
+  đổi giao diện.
+- **Giao diện sáng / tối** giống trang điều khiển của loa (tối đỏ, hoặc sáng xanh dbrobot.vn); màn
+  hình nhớ lựa chọn sau khi tắt nguồn.
+- **Menu Ứng dụng**: **vuốt ngang** màn hình chính để mở, như màn hình điện thoại. Chạm biểu tượng:
+  *Giao diện* (đổi sáng/tối), *Độ sáng*, *Âm lượng* loa, *Gọi loa*, *Tìm loa* (chọn loa khác),
+  *Màn hình* (giao diện, xoay 180°, đảo màu, giảm sáng ban đêm), *Thông tin* (loa, Wi-Fi, IP, khởi
+  động lại), *Cảm ứng* (chỉnh lại). Không chạm 45 giây, hoặc khi có người nói chuyện với loa, màn
+  hình tự quay về trang chính.
 
-Cần loa chạy DB-Robot **1.5.15** trở lên. Một loa có thể có nhiều màn hình; trong trang điều khiển
+Cần loa chạy DB-Robot **1.5.15** trở lên (**1.5.16** để dùng nút Tắt nghe / Bật nghe). Một loa có thể có nhiều màn hình; trong trang điều khiển
 của loa, thẻ **Nhóm loa & màn hình phụ** (tab System) liệt kê các màn hình đang nối.
 
 ## Nối dây
@@ -105,7 +114,8 @@ Màn hình nói chuyện với loa qua UDP cổng **8089** (`link/SpeakerLink.kt
 - Gửi `{"t":"sub","name":"…"}` mỗi 8 giây → loa đẩy trạng thái `{"t":"st",…}` mỗi khi có thay đổi
   (và 3 giây một lần), kèm giờ của loa, nên màn hình không cần Internet để biết giờ.
 - Trong lúc phát nhạc, loa gửi phổ âm thanh 15 lần mỗi giây: 2 byte `SP` + 32 byte.
-- Nút trên màn hình gửi `{"t":"cmd","c":"pause|resume|next|stop|vol+|vol-|wake|alarm_stop"}`.
+- Nút trên màn hình gửi `{"t":"cmd","c":"pause|resume|next|stop|vol+|vol-|wake|sleep|mute|unmute|alarm_stop"}`.
+  `mute` / `unmute` (1.5.16) là công tắc **Tắt nghe** của trang điều khiển: loa bỏ qua / nghe lại từ đánh thức.
 
 ## Build từ mã nguồn
 
@@ -118,6 +128,10 @@ idf.py build
 idf.py -p COM5 flash monitor
 ```
 
+Màn 2.8" ST7789 dùng đúng thông số của nhà sản xuất, ở `main/board.h`: 240×320 dọc, không lật, không
+đổi trục, đảo màu, thứ tự RGB, không lệch, SPI mode 0, đèn nền không đảo. Hình ngang 320×240 do LVGL
+xoay bằng phần mềm (`display.c`).
+
 Lần build đầu, ESP-IDF tự tải LVGL 9.2.2 và driver ILI9341 (xem `main/idf_component.yml`). Font
 tiếng Việt (Be Vietnam Pro, kèm biểu tượng Font Awesome) đã được chuyển sẵn thành mã C trong
 `main/fonts/` bằng `lv_font_conv`.
@@ -126,16 +140,16 @@ Tạo tệp gộp để nạp ở 0x0:
 
 ```
 cd build
-esptool.py --chip esp32s3 merge_bin -o DBR1-Display-ESP32S3.bin --flash_mode qio --flash_size 16MB 0x0 bootloader/bootloader.bin 0x8000 partition_table/partition-table.bin 0x10000 dbr1-display.bin
+esptool.py --chip esp32s3 merge_bin -o DBR1-Display-ESP32S3.bin --flash_mode dio --flash_freq 80m --flash_size 16MB 0x0 bootloader/bootloader.bin 0x8000 partition_table/partition-table.bin 0x10000 dbr1-display.bin
 ```
 
 | Tệp | Nội dung |
 |---|---|
 | `main/board.h` | chân GPIO, tốc độ SPI |
-| `main/display.c` | màn hình (ST7789/ILI9341), đèn nền, LVGL |
+| `main/display.c` | màn hình (ST7789/ILI9341), đèn nền, LVGL; xoay hình bằng phần mềm |
 | `main/touch.c` | cảm ứng XPT2046 |
 | `main/net.c` | Wi-Fi, Wi-Fi cài đặt, DNS cho trang cài đặt tự mở |
 | `main/portal.c` | trang cài đặt |
 | `main/link.c` | tìm loa và nhận trạng thái qua UDP 8089 |
-| `main/ui.c` | các màn hình |
+| `main/ui.c` | các màn hình, giao diện sáng/tối, menu Ứng dụng |
 | `main/cfg.c` | cài đặt lưu trong NVS |

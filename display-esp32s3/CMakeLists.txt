@@ -1,3 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 project(dbr1-display)
+add_compile_options(-Wno-error=attributes)
+add_compile_options(-Wno-error=stringop-truncation)

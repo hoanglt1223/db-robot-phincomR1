@@ -4,5 +4,6 @@ file(GLOB FONT_SRCS "fonts/*.c")
 idf_component_register(
     SRCS "app_main.c" "cfg.c" "display.c" "touch.c" "net.c" "portal.c" "link.c" "ui.c" ${FONT_SRCS}
     INCLUDE_DIRS "."
+    REQUIRES json lvgl esp_http_server nvs_flash esp_wifi esp_event
 )
 target_compile_options(${COMPONENT_LIB} PRIVATE -Wno-unused-function)

@@ -3,6 +3,13 @@
 Mỗi bản một mục `## v<versionName>`. Khi phát hành, đoạn văn dưới mục đó được đưa vào trang Release
 và vào ô "Bản mới nhất" trong trang điều khiển của loa -- viết ngắn, cho người dùng đọc.
 
+## v1.5.16
+
+- **Màn hình phụ — giao diện sáng/tối** giống trang điều khiển của loa: nền tối đỏ hoặc nền sáng xanh dbrobot.vn, đổi bằng nút mặt trời/trăng ở góc trên bên phải; màn hình nhớ lựa chọn.
+- **Màn hình phụ — menu Ứng dụng**: vuốt ngang như điện thoại để mở, chạm biểu tượng để chỉnh giao diện, độ sáng, âm lượng loa, gọi loa, chọn loa khác, cài đặt màn hình (xoay, đảo màu, giảm sáng ban đêm), xem thông tin và chỉnh lại cảm ứng.
+- **Màn hình phụ — nút "Tắt nghe"** ngay trong màn hình trò chuyện: bấm để kết thúc cuộc nói chuyện, quay về màn hình chính và loa thôi nghe từ đánh thức (màn hình chính có nút **Bật nghe**). Cần loa 1.5.16 để tắt/bật nghe; bản cũ chỉ kết thúc cuộc nói chuyện.
+- Màn hình phụ dùng đúng thông số của màn ST7789 2.8" (240×320, đảo màu, RGB) để màu hiển thị chuẩn.
+
 ## v1.5.15
 
 - **Nhóm loa — phát cùng lúc trên nhiều loa**: thẻ mới **Nhóm loa & màn hình phụ** (tab System). Bấm **Tìm loa trong mạng**, đánh dấu các loa DB-Robot khác rồi bật **Phát cùng các loa trong nhóm**: bài hát, radio, podcast phát ở loa này sẽ phát đồng thời trên các loa đã chọn; tạm dừng, tiếp tục, bài kế, dừng, tua cũng đi theo. Chỉnh âm lượng từng loa ngay trong thẻ. Mọi loa trong nhóm cần chạy bản 1.5.15.

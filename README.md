@@ -321,7 +321,9 @@ Loa không có màn hình, nên có thể gắn thêm một màn hình phụ: m�
 màn **2.8" SPI TFT 240×320 cảm ứng** (ST7789 hoặc ILI9341). Màn hình vào cùng Wi-Fi, tự tìm loa và
 hiển thị: khuôn mặt và lời trò chuyện khi đang nói chuyện; tên bài, phổ âm thanh, thời gian và nút
 điều khiển khi phát nhạc; đồng hồ lớn, thời tiết, báo thức sắp tới lúc rảnh; nút tắt khi báo thức
-reo. Một loa có thể có nhiều màn hình.
+reo. Có giao diện **sáng/tối** như trang điều khiển (nút mặt trời/trăng), **menu Ứng dụng** vuốt
+ngang để chỉnh độ sáng, âm lượng, màn hình…, và nút **Tắt nghe** ngay trong màn hình trò chuyện.
+Một loa có thể có nhiều màn hình.
 
 Nối dây, nạp firmware (`DBR1-Display-ESP32S3.bin` trong mỗi bản phát hành, nạp bằng trình duyệt
 được) và cài đặt: [display-esp32s3/README.md](display-esp32s3/README.md).

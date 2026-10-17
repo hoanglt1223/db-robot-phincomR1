@@ -102,7 +102,7 @@ static bool field(const char *body, const char *key, char *out, size_t n)
             memcpy(tmp, p, l);
             tmp[l] = 0;
             url_decode(tmp);
-            strncpy(out, tmp, n - 1);
+            strlcpy(out, tmp, n - 1);
             out[n - 1] = 0;
             return true;
         }
@@ -133,13 +133,13 @@ static esp_err_t post_save(httpd_req_t *r)
     body[got] = 0;
     char v[100];
     if (field(body, "ssid", v, sizeof v) && strcmp(v, g_cfg.ssid)) {
-        strncpy(g_cfg.ssid, v, sizeof g_cfg.ssid - 1);
+        strlcpy(g_cfg.ssid, v, sizeof g_cfg.ssid - 1);
         g_cfg.pass[0] = 0;                       // a new network wants its own password
     }
-    if (field(body, "pass", v, sizeof v) && v[0]) strncpy(g_cfg.pass, v, sizeof g_cfg.pass - 1);
-    if (field(body, "name", v, sizeof v) && v[0]) strncpy(g_cfg.name, v, sizeof g_cfg.name - 1);
-    if (field(body, "spk", v, sizeof v)) strncpy(g_cfg.spk_id, v, sizeof g_cfg.spk_id - 1);
-    if (field(body, "spkip", v, sizeof v)) strncpy(g_cfg.spk_ip, v, sizeof g_cfg.spk_ip - 1);
+    if (field(body, "pass", v, sizeof v) && v[0]) strlcpy(g_cfg.pass, v, sizeof g_cfg.pass - 1);
+    if (field(body, "name", v, sizeof v) && v[0]) strlcpy(g_cfg.name, v, sizeof g_cfg.name - 1);
+    if (field(body, "spk", v, sizeof v)) strlcpy(g_cfg.spk_id, v, sizeof g_cfg.spk_id - 1);
+    if (field(body, "spkip", v, sizeof v)) strlcpy(g_cfg.spk_ip, v, sizeof g_cfg.spk_ip - 1);
     if (field(body, "lcd", v, sizeof v)) g_cfg.lcd_type = atoi(v) == 1 ? LCD_ILI9341 : LCD_ST7789;
     if (field(body, "br", v, sizeof v)) { int b = atoi(v); g_cfg.bright = b < 5 ? 5 : b > 100 ? 100 : b; }
     g_cfg.invert = field(body, "inv", v, sizeof v);

@@ -21,6 +21,7 @@ typedef struct {
     uint8_t cal_swap;     // raw X drives screen Y
     uint8_t want_cal;     // run the calibration on the next start
     int16_t cal_x0, cal_x1, cal_y0, cal_y1;   // raw readings at screen x=CAL_A/CAL_B, y=CAL_A/CAL_C
+    uint8_t light;        // light theme (0 = dark); added after v1.5.15, keep it last
 } cfg_t;
 
 #define CAL_A 30
