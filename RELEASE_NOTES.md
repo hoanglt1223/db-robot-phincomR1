@@ -3,12 +3,18 @@
 Mỗi bản một mục `## v<versionName>`. Khi phát hành, đoạn văn dưới mục đó được đưa vào trang Release
 và vào ô "Bản mới nhất" trong trang điều khiển của loa -- viết ngắn, cho người dùng đọc.
 
+## v1.5.17
+
+- **Màn hình phụ — menu Ứng dụng** (vuốt ngang để mở) có 8 ứng dụng: **Tìm loa**, **Wifi** (quét và nối sang Wi-Fi khác, nhập mật khẩu bằng bàn phím trên màn hình), **Báo thức** (thêm, bật/tắt, sửa giờ và ngày lặp, xoá), **Radio**, **Nhạc** (gõ tên bài hát, loa tìm và phát), **Podcast** (chọn chương trình rồi chọn tập), **Cài đặt** (âm lượng loa, độ sáng, giao diện sáng/tối, xoay, đảo màu, giảm sáng ban đêm, chỉnh cảm ứng) và **Thông tin**. Radio, Nhạc, Podcast và Báo thức cần loa 1.5.17.
+- **Màn hình phụ — đồng hồ lật (flip)** ở trang chính, hai nút Tắt nghe / Gọi loa nhỏ gọn hơn, quang phổ nhạc nhiều màu cầu vồng.
+- **Màn hình phụ — Tắt nghe** khoá màn hình trò chuyện cho đến khi loa im hẳn, không bật lại giao diện chat giữa chừng.
+- **Trang cài đặt Wi-Fi của màn hình (192.168.4.1)** hiện danh sách mạng Wi-Fi để chạm chọn (kèm ổ khoá và vạch sóng), có nút "Dò lại"; trước đây phải gõ tay tên mạng.
+
 ## v1.5.16
 
 - **Màn hình phụ — giao diện sáng/tối** giống trang điều khiển của loa: nền tối đỏ hoặc nền sáng xanh dbrobot.vn, đổi bằng nút mặt trời/trăng ở góc trên bên phải; màn hình nhớ lựa chọn.
-- **Màn hình phụ — menu Ứng dụng**: vuốt ngang như điện thoại để mở, chạm biểu tượng để vào **Màn hình** (giao diện sáng/tối, độ sáng, xoay, đảo màu, giảm sáng ban đêm, chỉnh cảm ứng), **Âm lượng**, **Báo thức** (thêm, bật/tắt, sửa giờ và ngày lặp, xoá), **Radio**, **Podcast** (chọn chương trình rồi chọn tập), **Nhạc** (gõ tên bài hát, loa tìm và phát), gọi loa, chọn loa khác và xem thông tin. Radio, podcast, nhạc và báo thức cần loa 1.5.16.
+- **Màn hình phụ — menu Ứng dụng**: vuốt ngang như điện thoại để mở, chạm biểu tượng để chỉnh độ sáng, âm lượng loa, gọi loa, chọn loa khác, cài đặt màn hình, xem thông tin và chỉnh lại cảm ứng.
 - **Màn hình phụ — nút "Tắt nghe"** ngay trong màn hình trò chuyện: bấm để kết thúc cuộc nói chuyện, quay về màn hình chính và loa thôi nghe từ đánh thức (màn hình chính có nút **Bật nghe**). Cần loa 1.5.16 để tắt/bật nghe; bản cũ chỉ kết thúc cuộc nói chuyện.
-- Màn hình phụ: quang phổ nhạc nhiều màu cầu vồng; bấm **Tắt nghe** thì khoá màn hình trò chuyện cho đến khi loa im hẳn, không bật lại giao diện chat giữa chừng.
 - Màn hình phụ dùng đúng thông số của màn ST7789 2.8" (240×320, đảo màu, RGB) để màu hiển thị chuẩn.
 
 ## v1.5.15

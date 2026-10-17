@@ -15,15 +15,17 @@ Wi-Fi với loa, tự tìm loa và hiển thị:
   đổi giao diện.
 - **Giao diện sáng / tối** giống trang điều khiển của loa (tối đỏ, hoặc sáng xanh dbrobot.vn); màn
   hình nhớ lựa chọn sau khi tắt nguồn.
-- **Menu Ứng dụng**: **vuốt ngang** màn hình chính để mở, như màn hình điện thoại. Chạm biểu tượng:
-  *Màn hình* (độ sáng, giao diện sáng/tối, xoay 180°, đảo màu, giảm sáng ban đêm, chỉnh lại cảm
-  ứng), *Âm lượng* loa, *Báo thức* (danh sách, bật/tắt, thêm, sửa giờ + ngày lặp, xoá), *Radio*,
-  *Podcast* (chương trình → tập), *Nhạc* (gõ tên bài hát không dấu, loa tìm và phát bài khớp nhất),
-  *Gọi loa*, *Tìm loa* (chọn loa khác), *Thông tin* (loa, Wi-Fi, IP, khởi động lại). Không chạm 45
-  giây, hoặc khi có người nói chuyện với loa, màn
-  hình tự quay về trang chính.
+- **Đồng hồ lật (flip)** ở trang chính: bốn thẻ số, số nào đổi thì lật xuống như đồng hồ lật thật.
+- **Menu Ứng dụng**: **vuốt ngang** màn hình chính để mở, như màn hình điện thoại. 8 ứng dụng:
+  *Tìm loa* (chọn loa khác), *Wifi* (quét, chọn mạng, nhập mật khẩu rồi màn hình khởi động lại để
+  vào mạng mới; sai mật khẩu thì sau chừng 25 giây màn hình phát Wi-Fi `DBR1-Display-xxxx` để cài
+  lại), *Báo thức* (danh sách, bật/tắt, thêm, sửa giờ + ngày lặp, xoá), *Radio*, *Nhạc* (gõ tên
+  bài hát không dấu, loa tìm và phát bài khớp nhất), *Podcast* (chương trình → tập), *Cài đặt*
+  (âm lượng loa, độ sáng, giao diện sáng/tối, xoay 180°, đảo màu, giảm sáng ban đêm, chỉnh lại cảm
+  ứng) và *Thông tin* (loa, Wi-Fi, IP, khởi động lại). Không chạm 45 giây, hoặc khi có người nói
+  chuyện với loa, màn hình tự quay về trang chính.
 
-Cần loa chạy DB-Robot **1.5.15** trở lên (**1.5.16** để dùng nút Tắt nghe / Bật nghe, Radio, Podcast, Nhạc và Báo thức). Một loa có thể có nhiều màn hình; trong trang điều khiển
+Cần loa chạy DB-Robot **1.5.15** trở lên (**1.5.16** để dùng nút Tắt nghe / Bật nghe; **1.5.17** để dùng Radio, Podcast, Nhạc và Báo thức). Một loa có thể có nhiều màn hình; trong trang điều khiển
 của loa, thẻ **Nhóm loa & màn hình phụ** (tab System) liệt kê các màn hình đang nối.
 
 ## Nối dây
@@ -118,7 +120,7 @@ Màn hình nói chuyện với loa qua UDP cổng **8089** (`link/SpeakerLink.kt
 - Trong lúc phát nhạc, loa gửi phổ âm thanh 15 lần mỗi giây: 2 byte `SP` + 32 byte.
 - Nút trên màn hình gửi `{"t":"cmd","c":"pause|resume|next|stop|vol+|vol-|wake|sleep|mute|unmute|alarm_stop"}`.
   `mute` / `unmute` (1.5.16) là công tắc **Tắt nghe** của trang điều khiển: loa bỏ qua / nghe lại từ đánh thức.
-- Menu Ứng dụng (1.5.16), loa trả lời cho đúng máy hỏi: `{"t":"req","k":"radio"|"podcast"|"alarms"}`,
+- Menu Ứng dụng (1.5.17), loa trả lời cho đúng máy hỏi: `{"t":"req","k":"radio"|"podcast"|"alarms"}`,
   `{"t":"req","k":"episodes","id":<chương trình>}` → `{"t":"list","k","id","items":[{id,n}]}` /
   `{"t":"alarms","alarms":[{id,on,time,days,label}],"next"}`; `{"t":"play","k":"radio","id"}`,
   `{"k":"episode","n"}`, `{"k":"music","q"}` → `{"t":"res","ok","msg"}`;

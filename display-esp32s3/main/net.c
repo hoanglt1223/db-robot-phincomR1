@@ -159,6 +159,17 @@ int net_rssi(void)
     return r.rssi;
 }
 
+static esp_err_t scan_go(const wifi_scan_config_t *sc)
+{
+    if (!s_got_ip) esp_wifi_disconnect();      // a scan fails while the station is in the middle of connecting
+    esp_err_t e = esp_wifi_scan_start(sc, true);
+    if (e != ESP_OK) {
+        vTaskDelay(pdMS_TO_TICKS(400));
+        e = esp_wifi_scan_start(sc, true);
+    }
+    return e;
+}
+
 static void json_str(char *out, int len, int *n, const char *s)
 {
     if (*n < len - 1) out[(*n)++] = '"';
@@ -177,8 +188,8 @@ int net_scan_json(char *out, int len)
     xSemaphoreTake(s_scan_lock, portMAX_DELAY);
     int n = snprintf(out, len, "[");
     wifi_scan_config_t sc = { .show_hidden = false };
-    if (esp_wifi_scan_start(&sc, true) == ESP_OK) {
-        uint16_t cnt = 20;
+    if (scan_go(&sc) == ESP_OK) {
+        uint16_t cnt = 30;
         wifi_ap_record_t *rec = calloc(cnt, sizeof *rec);
         if (rec && esp_wifi_scan_get_ap_records(&cnt, rec) == ESP_OK) {
             for (int i = 0; i < cnt && n < len - 120; i++) {
@@ -208,8 +219,8 @@ static void scan_task(void *arg)
     xSemaphoreTake(s_scan_lock, portMAX_DELAY);
     int n = 0;
     wifi_scan_config_t sc = { .show_hidden = false };
-    if (esp_wifi_scan_start(&sc, true) == ESP_OK) {
-        uint16_t cnt = 20;
+    if (scan_go(&sc) == ESP_OK) {
+        uint16_t cnt = 30;
         wifi_ap_record_t *rec = calloc(cnt, sizeof *rec);
         if (rec && esp_wifi_scan_get_ap_records(&cnt, rec) == ESP_OK) {
             for (int i = 0; i < cnt && n < 16; i++) {
