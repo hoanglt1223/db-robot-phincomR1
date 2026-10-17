@@ -7,6 +7,7 @@
 #include "freertos/semphr.h"
 #include "freertos/idf_additions.h"
 #include "esp_log.h"
+#include "esp_timer.h"
 #include "esp_heap_caps.h"
 #include "esp_http_client.h"
 #include "esp_crt_bundle.h"
@@ -25,7 +26,8 @@ static volatile int s_gen;            // bumped by start/stop: the running task 
 static volatile bool s_running;
 static vid_state_t s_state = VID_IDLE;
 static char s_msg[128];
-static char s_url[200];
+static char s_server[96], s_vid[16];
+static int s_ss0;
 static uint16_t *s_fb[3];             // decoded frames; s_front is the one the UI may read
 static int s_front;
 static uint32_t s_seq;
@@ -106,39 +108,29 @@ static void tls_diag(const char *url, int *code, int *flags)
     esp_tls_conn_destroy(t);
 }
 
-static void run(int gen)
-{
-    // kept between sessions: allocated once, so the heap does not fragment
-    static uint8_t *buf;
-    static void *pool;
-    if (!buf) buf = heap_caps_malloc(BUF_CAP, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
-    if (!pool) pool = heap_caps_malloc(8192, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
-    if (!pool) pool = heap_caps_malloc(8192, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);   // slower, but it works
-    if (!buf || !pool) {
-        char m[80];
-        snprintf(m, sizeof m, "Hết bộ nhớ (%s; trống %d KB, PSRAM %d KB)", !buf ? "đệm" : "bảng giải mã",
-                 (int)(heap_caps_get_free_size(MALLOC_CAP_INTERNAL) / 1024),
-                 (int)(heap_caps_get_free_size(MALLOC_CAP_SPIRAM) / 1024));
-        fail(gen, m);
-        return;
-    }
+enum { SES_STOP = 0, SES_RETRY = 1, SES_FATAL = 2 };
 
-    esp_http_client_config_t cfg = { .url = s_url, .timeout_ms = 15000, .buffer_size = 1024, .buffer_size_tx = 512 };
-    if (!strncmp(s_url, "https://", 8)) cfg.crt_bundle_attach = esp_crt_bundle_attach;
+/* One connection. SES_RETRY: it broke in the middle of the stream (reconnect from where it was);
+   SES_FATAL: it never worked (message already set); SES_STOP: it ended or the user closed it. */
+static int session(int gen, const char *url, uint8_t *buf, void *pool, bool *got_frame)
+{
+    esp_http_client_config_t cfg = { .url = url, .timeout_ms = 15000, .buffer_size = 1024, .buffer_size_tx = 512 };
+    if (!strncmp(url, "https://", 8)) cfg.crt_bundle_attach = esp_crt_bundle_attach;
     esp_http_client_handle_t c = esp_http_client_init(&cfg);
-    if (!c) { fail(gen, "Không mở được kết nối"); goto done; }
+    if (!c) { fail(gen, "Không mở được kết nối"); return SES_FATAL; }
     esp_err_t oe = esp_http_client_open(c, 0);
     if (oe != ESP_OK) {
-        const char *hostpart = strstr(s_url, "://");
+        const char *hostpart = strstr(url, "://");
         char m[128];
         int tc = 0, tf = 0;
-        if (!strncmp(s_url, "https://", 8)) tls_diag(s_url, &tc, &tf);
+        if (!strncmp(url, "https://", 8)) tls_diag(url, &tc, &tf);
         snprintf(m, sizeof m, "Không nối được %.26s: %s (mã %d, TLS -0x%x, chứng chỉ 0x%x)",
-                 hostpart ? hostpart + 3 : s_url, esp_err_to_name(oe), esp_http_client_get_errno(c), tc < 0 ? -tc : tc, tf);
-        ESP_LOGE(TAG, "%s (url %s)", m, s_url);
-        fail(gen, m);
+                 hostpart ? hostpart + 3 : url, esp_err_to_name(oe), esp_http_client_get_errno(c), tc < 0 ? -tc : tc, tf);
+        ESP_LOGE(TAG, "%s (url %s)", m, url);
         esp_http_client_cleanup(c);
-        goto done;
+        if (*got_frame) return SES_RETRY;
+        fail(gen, m);
+        return SES_FATAL;
     }
     esp_http_client_fetch_headers(c);
     int code = esp_http_client_get_status_code(c);
@@ -147,21 +139,27 @@ static void run(int gen)
         snprintf(m, sizeof m, code == 503 ? "Máy chủ đang bận" : "Máy chủ báo lỗi %d", code);
         fail(gen, m);
         esp_http_client_close(c); esp_http_client_cleanup(c);
-        goto done;
+        return SES_FATAL;
     }
+    int result = SES_STOP;
     size_t len = 0;
     int idle = 0;
     while (gen == s_gen) {
         int r = esp_http_client_read(c, (char *)buf + len, BUF_CAP - len);
         if (r == -ESP_ERR_HTTP_EAGAIN) {
             // nothing yet: the server is still preparing the video (or a proxy holds the first bytes) — wait, up to a minute
-            if (++idle > 4) { fail(gen, "Máy chủ quá lâu không gửi hình (proxy có thể đang giữ đệm)"); break; }
+            if (++idle > 4) { fail(gen, "Máy chủ quá lâu không gửi hình (proxy có thể đang giữ đệm)"); result = SES_FATAL; break; }
             continue;
         }
         if (r < 0) {
-            char em[64];
-            snprintf(em, sizeof em, "Mất kết nối (đọc %d, mã %d)", r, esp_http_client_get_errno(c));
-            fail(gen, em);
+            ESP_LOGW(TAG, "read %d errno %d after %u bytes", r, esp_http_client_get_errno(c), (unsigned)len);
+            if (*got_frame) { result = SES_RETRY; }
+            else {
+                char em[64];
+                snprintf(em, sizeof em, "Mất kết nối (đọc %d, mã %d)", r, esp_http_client_get_errno(c));
+                fail(gen, em);
+                result = SES_FATAL;
+            }
             break;
         }
         idle = 0;
@@ -185,6 +183,7 @@ static void run(int gen)
                 s_seq++;
                 s_state = VID_PLAYING;
                 xSemaphoreGive(s_mx);
+                *got_frame = true;
             }
             size_t used = hdr + n;
             memmove(buf, buf + used, len - used);
@@ -194,7 +193,39 @@ static void run(int gen)
     }
     esp_http_client_close(c);
     esp_http_client_cleanup(c);
-done:;
+    return result;
+}
+
+static void run(int gen)
+{
+    // kept between sessions: allocated once, so the heap does not fragment
+    static uint8_t *buf;
+    static void *pool;
+    if (!buf) buf = heap_caps_malloc(BUF_CAP, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+    if (!pool) pool = heap_caps_malloc(8192, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+    if (!pool) pool = heap_caps_malloc(8192, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);   // slower, but it works
+    if (!buf || !pool) {
+        char m[80];
+        snprintf(m, sizeof m, "Hết bộ nhớ (%s; trống %d KB, PSRAM %d KB)", !buf ? "đệm" : "bảng giải mã",
+                 (int)(heap_caps_get_free_size(MALLOC_CAP_INTERNAL) / 1024),
+                 (int)(heap_caps_get_free_size(MALLOC_CAP_SPIRAM) / 1024));
+        fail(gen, m);
+        return;
+    }
+    // A stream that breaks after it has been playing is picked up again where it was (the last picture stays on
+    // the screen meanwhile); one that never started is reported.
+    bool got_frame = false;
+    int64_t t0 = esp_timer_get_time();
+    for (int attempt = 0; attempt < 8 && gen == s_gen; attempt++) {
+        char url[260];
+        int ss = s_ss0 + (int)((esp_timer_get_time() - t0) / 1000000);
+        snprintf(url, sizeof url, "%s/video_mjpeg?id=%s&ss=%d", s_server, s_vid, ss);
+        int r = session(gen, url, buf, pool, &got_frame);
+        if (r != SES_RETRY) return;
+        ESP_LOGW(TAG, "stream broke, reconnecting (%d)", attempt + 1);
+        vTaskDelay(pdMS_TO_TICKS(300));
+    }
+    fail(gen, "Mất kết nối nhiều lần, thử lại sau");
 }
 
 static TaskHandle_t s_task;
@@ -226,7 +257,9 @@ void video_start(const char *server, const char *video_id, int start_s)
     s_gen++;
     for (int i = 0; i < 50 && s_running; i++) vTaskDelay(pdMS_TO_TICKS(20));   // the old task leaves first
     if (s_running) { setst(VID_ERROR, "Đang bận, thử lại"); return; }
-    snprintf(s_url, sizeof s_url, "%s/video_mjpeg?id=%s&ss=%d", server, video_id, start_s < 0 ? 0 : start_s);
+    snprintf(s_server, sizeof s_server, "%s", server);
+    snprintf(s_vid, sizeof s_vid, "%s", video_id);
+    s_ss0 = start_s < 0 ? 0 : start_s;
     xSemaphoreTake(s_mx, portMAX_DELAY);
     s_seq = 0;
     xSemaphoreGive(s_mx);

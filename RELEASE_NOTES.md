@@ -3,6 +3,14 @@
 Mỗi bản một mục `## v<versionName>`. Khi phát hành, đoạn văn dưới mục đó được đưa vào trang Release
 và vào ô "Bản mới nhất" trong trang điều khiển của loa -- viết ngắn, cho người dùng đọc.
 
+## v1.5.26
+
+- Nút "Hình" qua HTTPS (ms.dbrobot.vn): sửa lỗi luồng đứt sau vài giây do mã hoá AES bằng phần cứng thiếu bộ nhớ trong (`esp-aes: Failed to allocate memory`). Màn hình giờ giải mã TLS bằng phần mềm, chậm hơn chút nhưng ổn định. Cần xoá file `sdkconfig` cũ trước khi build lại firmware màn hình.
+
+## v1.5.25
+
+- Nút "Hình": nếu luồng hình đứt giữa chừng (hay gặp qua HTTPS/proxy), màn hình tự nối lại từ đúng giây đang xem (tối đa 8 lần), giữ nguyên khung hình cuối trong lúc nối; chỉ báo lỗi khi luồng chưa bao giờ chạy. Nhật ký serial ghi `read -1 errno … after … bytes` để tìm nguyên nhân đứt.
+
 ## v1.5.24
 
 - Nút "Hình" qua HTTPS (ms.dbrobot.vn): TLS đã nối được; màn hình giờ chờ tối đa ~60 giây nếu máy chủ/proxy chưa gửi khung đầu tiên (trước đó chỉ chờ 10 giây rồi báo "Mất kết nối"), và thông báo lỗi ghi rõ mã đọc. Máy chủ nhạc thêm tiêu đề `X-Accel-Buffering: no` để nginx không giữ đệm luồng hình. Nếu dùng Nginx Proxy Manager, thêm `proxy_buffering off;` cho máy chủ ms.dbrobot.vn.

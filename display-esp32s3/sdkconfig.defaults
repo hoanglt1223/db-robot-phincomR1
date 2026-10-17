@@ -44,3 +44,8 @@ CONFIG_LWIP_IP_REASS_MAX_PBUFS=16
 CONFIG_SPIRAM_ALLOW_STACK_EXTERNAL_MEMORY=y
 CONFIG_FREERTOS_TASK_CREATE_ALLOW_EXT_MEM=y
 CONFIG_MBEDTLS_EXTERNAL_MEM_ALLOC=y
+
+# AES by software for TLS: with the TLS buffers in PSRAM the hardware AES needs a big DMA-capable bounce
+# buffer in the (scarce) internal RAM and fails with "esp-aes: Failed to allocate memory" after a moment.
+# The picture stream is ~50 KB/s, which the CPU decrypts easily.
+CONFIG_MBEDTLS_HARDWARE_AES=n
