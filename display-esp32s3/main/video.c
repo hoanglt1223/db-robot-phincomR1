@@ -123,7 +123,7 @@ static void run(int gen)
         return;
     }
 
-    esp_http_client_config_t cfg = { .url = s_url, .timeout_ms = 10000, .buffer_size = 1024, .buffer_size_tx = 512 };
+    esp_http_client_config_t cfg = { .url = s_url, .timeout_ms = 15000, .buffer_size = 1024, .buffer_size_tx = 512 };
     if (!strncmp(s_url, "https://", 8)) cfg.crt_bundle_attach = esp_crt_bundle_attach;
     esp_http_client_handle_t c = esp_http_client_init(&cfg);
     if (!c) { fail(gen, "Không mở được kết nối"); goto done; }
@@ -150,9 +150,21 @@ static void run(int gen)
         goto done;
     }
     size_t len = 0;
+    int idle = 0;
     while (gen == s_gen) {
         int r = esp_http_client_read(c, (char *)buf + len, BUF_CAP - len);
-        if (r < 0) { fail(gen, "Mất kết nối"); break; }
+        if (r == -ESP_ERR_HTTP_EAGAIN) {
+            // nothing yet: the server is still preparing the video (or a proxy holds the first bytes) — wait, up to a minute
+            if (++idle > 4) { fail(gen, "Máy chủ quá lâu không gửi hình (proxy có thể đang giữ đệm)"); break; }
+            continue;
+        }
+        if (r < 0) {
+            char em[64];
+            snprintf(em, sizeof em, "Mất kết nối (đọc %d, mã %d)", r, esp_http_client_get_errno(c));
+            fail(gen, em);
+            break;
+        }
+        idle = 0;
         if (r == 0) {
             if (esp_http_client_is_complete_data_received(c)) { fail(gen, "Hết video"); break; }
             vTaskDelay(pdMS_TO_TICKS(10));
