@@ -38,3 +38,9 @@ CONFIG_LV_BUILD_EXAMPLES=n
 # a speaker state with long Vietnamese text can go over one Ethernet frame
 CONFIG_LWIP_IP4_REASSEMBLY=y
 CONFIG_LWIP_IP_REASS_MAX_PBUFS=16
+
+# the picture stream (video.c): its task stack lives in PSRAM and TLS buffers go there too,
+# so the internal RAM is left for Wi-Fi and the display
+CONFIG_SPIRAM_ALLOW_STACK_EXTERNAL_MEMORY=y
+CONFIG_FREERTOS_TASK_CREATE_ALLOW_EXT_MEM=y
+CONFIG_MBEDTLS_EXTERNAL_MEM_ALLOC=y
