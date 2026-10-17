@@ -6,6 +6,7 @@ import info.dourok.voicebot.alarm.AlarmBook
 import info.dourok.voicebot.alarm.AlarmRinger
 import info.dourok.voicebot.alarm.AlarmScheduler
 import info.dourok.voicebot.data.Settings
+import info.dourok.voicebot.domain.voice.AppLog
 import info.dourok.voicebot.domain.voice.ConversationLog
 import info.dourok.voicebot.domain.voice.VoiceCommands
 import info.dourok.voicebot.domain.voice.VoiceDebugState
@@ -56,6 +57,12 @@ object SpeakerLink {
     @Volatile private var socket: DatagramSocket? = null
     @Volatile private var deviceId = ""
     @Volatile private var version = ""
+    @Volatile private var appContext: Context? = null
+    /** The display's requests (lists, searches, alarms) can wait on the network: one at a time, off the receive thread. */
+    private val worker = java.util.concurrent.Executors.newSingleThreadExecutor { r ->
+        Thread(r, "link-api").apply { isDaemon = true }
+    }
+    @Volatile private var lastEpisodes: JSONArray? = null
 
     /** The displays currently subscribed, for the panel: [{name, ip}]. */
     fun displays(): JSONArray {
@@ -71,6 +78,7 @@ object SpeakerLink {
         if (socket != null) return
         deviceId = id
         version = appVersion
+        appContext = context.applicationContext
         try {
             val s = DatagramSocket(null)
             s.reuseAddress = true
@@ -131,6 +139,15 @@ object SpeakerLink {
                     }
                     "bye" -> synchronized(subs) { subs.remove(from.toString()) }
                     "cmd" -> command(msg.optString("c"))
+                    // the display's menu: lists, searches, alarms (answered to whoever asked)
+                    "req", "play", "al" -> worker.execute {
+                        try {
+                            handleApi(msg, from)
+                        } catch (e: Exception) {
+                            Log.e(TAG, "api ${msg.optString("t")}: ${e.message}")
+                            send(from, res(false, "Loa không trả lời được"))
+                        }
+                    }
                 }
             } catch (e: Exception) {
                 if (socket == null) return
@@ -143,6 +160,9 @@ object SpeakerLink {
         when (c) {
             "wake" -> VoiceCommands.flow.tryEmit(VoiceCommands.Command.WAKE)
             "sleep" -> VoiceCommands.flow.tryEmit(VoiceCommands.Command.SLEEP)
+            // "Tắt nghe" / "Bật nghe" on the display: the same switch as the one on the control panel
+            "mute" -> { VoiceGate.paused = true; AppLog.i("Tắt nghe (từ màn hình phụ)") }
+            "unmute" -> { VoiceGate.paused = false; AppLog.i("Nghe lại từ đánh thức (từ màn hình phụ)") }
             "pause" -> LocalMusicPlayer.pause()
             "resume" -> LocalMusicPlayer.resume()
             "next" -> LocalMusicPlayer.next()
@@ -155,6 +175,143 @@ object SpeakerLink {
                 set(v.coerceIn(0, 100))
             }
         }
+    }
+
+    // ── the display's menu: radio, podcasts, music, alarms ──────────────────────────
+    //
+    //  {"t":"req","k":"radio"|"podcast"|"alarms"}        → {"t":"list","k","items":[{id,n}]} / {"t":"alarms",…}
+    //  {"t":"req","k":"episodes","id":<show key>}         → {"t":"list","k":"episodes","id","items":[{id:"0",n:title}]}
+    //  {"t":"play","k":"radio","id":<station>}            → {"t":"res","ok","msg"}
+    //  {"t":"play","k":"episode","n":<index of the last episodes list>}
+    //  {"t":"play","k":"music","q":<words>}               → plays the best match, like a spoken request
+    //  {"t":"al","op":"toggle","id","on"} | {"op":"save","id"("" = new),"time":"HH:mm","days":[0..6],"label"} | {"op":"del","id"}
+    //                                                      → {"t":"alarms",…} (or res on failure)
+    // The lists and plays go through the control panel's own HTTP API on this speaker, so a display
+    // does exactly what the panel does and nothing else.
+
+    private fun res(ok: Boolean, msg: String): String =
+        JSONObject().put("t", "res").put("ok", ok).put("msg", msg).toString()
+
+    private fun local(path: String, body: String? = null, timeoutMs: Int = 20_000): JSONObject {
+        val c = java.net.URL("http://127.0.0.1:${info.dourok.voicebot.control.ControlServer.PORT}$path")
+            .openConnection() as java.net.HttpURLConnection
+        try {
+            c.connectTimeout = 3_000
+            c.readTimeout = timeoutMs
+            if (body != null) {
+                c.requestMethod = "POST"
+                c.doOutput = true
+                c.setRequestProperty("Content-Type", "application/json; charset=utf-8")
+                c.outputStream.use { it.write(body.toByteArray(Charsets.UTF_8)) }
+            }
+            val text = (if (c.responseCode in 200..299) c.inputStream else c.errorStream)
+                ?.bufferedReader(Charsets.UTF_8)?.use { it.readText() }.orEmpty()
+            return JSONObject(text)
+        } finally {
+            c.disconnect()
+        }
+    }
+
+    private fun list(kind: String, id: String, rows: List<Pair<String, String>>): String {
+        val items = JSONArray()
+        rows.take(20).forEach { (i, n) -> items.put(JSONObject().put("id", i).put("n", tail(n, 40))) }
+        return JSONObject().put("t", "list").put("k", kind).put("id", id).put("items", items).toString()
+    }
+
+    private fun handleApi(msg: JSONObject, from: InetSocketAddress) {
+        when (msg.optString("t")) {
+            "req" -> when (val k = msg.optString("k")) {
+                "radio" -> {
+                    val a = local("/api/radio/stations").optJSONArray("stations") ?: JSONArray()
+                    send(from, list(k, "", (0 until a.length()).map { a.getJSONObject(it).let { o -> o.optString("id") to o.optString("name") } }))
+                }
+                "podcast" -> {
+                    val a = local("/api/podcast/shows").optJSONArray("shows") ?: JSONArray()
+                    send(from, list(k, "", (0 until a.length()).map { a.getJSONObject(it).let { o -> o.optString("id") to o.optString("name") } }))
+                }
+                "episodes" -> {
+                    val show = msg.optString("id").take(40)
+                    val r = local("/api/podcast/episodes?show=" + java.net.URLEncoder.encode(show, "UTF-8"), timeoutMs = 25_000)
+                    val eps = r.optJSONArray("episodes")
+                    if (!r.optBoolean("ok", false) || eps == null || eps.length() == 0) {
+                        send(from, res(false, r.optString("error", "Không có tập nào")))
+                        return
+                    }
+                    val keep = JSONArray()
+                    for (i in 0 until minOf(eps.length(), 12)) keep.put(eps.getJSONObject(i))
+                    lastEpisodes = keep
+                    send(from, list(k, show, (0 until keep.length()).map {
+                        val e = keep.getJSONObject(it)
+                        it.toString() to e.optString("title") + (e.optString("date").let { d -> if (d.isNotEmpty()) " · $d" else "" })
+                    }))
+                }
+                "alarms" -> send(from, alarmsJson())
+            }
+            "play" -> when (msg.optString("k")) {
+                "radio" -> {
+                    val r = local("/api/radio/play?id=" + java.net.URLEncoder.encode(msg.optString("id"), "UTF-8"))
+                    send(from, res(r.optBoolean("ok", false), r.optString("error", "Đang mở radio")))
+                }
+                "episode" -> {
+                    val eps = lastEpisodes
+                    val n = msg.optInt("n", -1)
+                    if (eps == null || n < 0 || n >= eps.length()) { send(from, res(false, "Danh sách tập đã cũ")); return }
+                    val r = local("/api/media/play", JSONObject().put("items", eps).put("start_index", n).toString())
+                    send(from, res(r.optBoolean("ok", false), r.optString("error", "Đang mở podcast")))
+                }
+                "music" -> {
+                    val q = msg.optString("q").trim().take(80)
+                    if (q.isEmpty()) { send(from, res(false, "Chưa nhập tên bài hát")); return }
+                    val r = local("/api/media/search?q=" + java.net.URLEncoder.encode(q, "UTF-8"), timeoutMs = 25_000)
+                    val first = r.optJSONArray("results")?.optJSONObject(0)
+                    if (!r.optBoolean("ok", false) || first == null) {
+                        send(from, res(false, r.optString("error").ifEmpty { "Không tìm thấy bài nào" }))
+                        return
+                    }
+                    val p = local("/api/media/play", JSONObject().put("items", JSONArray().put(first)).put("start_index", 0).toString())
+                    send(from, res(p.optBoolean("ok", false), if (p.optBoolean("ok", false)) tail(first.optString("title"), 70) else p.optString("error", "Không phát được")))
+                }
+            }
+            "al" -> {
+                val ctx = appContext ?: return
+                var list = AlarmScheduler.alarms()
+                val id = msg.optString("id")
+                when (msg.optString("op")) {
+                    "toggle" -> list = list.map { if (it.id == id) it.withEnabled(msg.optBoolean("on")) else it }
+                    "del" -> list = list.filter { it.id != id }
+                    "save" -> {
+                        val t = msg.optString("time")
+                        val hm = Regex("^(\\d{1,2}):(\\d{2})$").find(t)
+                        val h = hm?.groupValues?.get(1)?.toIntOrNull() ?: -1
+                        val m = hm?.groupValues?.get(2)?.toIntOrNull() ?: -1
+                        if (h !in 0..23 || m !in 0..59) { send(from, res(false, "Giờ không hợp lệ")); return }
+                        var mask = 0
+                        val d = msg.optJSONArray("days")
+                        for (i in 0 until (d?.length() ?: 0)) { val v = d!!.optInt(i, -1); if (v in 0..6) mask = mask or (1 shl v) }
+                        val label = msg.optString("label").take(40)
+                        val old = list.firstOrNull { it.id == id }
+                        if (old == null && list.size >= AlarmBook.MAX_ALARMS) { send(from, res(false, "Tối đa ${AlarmBook.MAX_ALARMS} báo thức")); return }
+                        val a = AlarmBook.Alarm(old?.id ?: "d" + System.currentTimeMillis(), true, h, m, mask, old?.sound, label)
+                        list = if (old == null) list + a else list.map { if (it.id == id) a else it }
+                    }
+                    else -> return
+                }
+                AlarmScheduler.save(ctx, list)
+                send(from, alarmsJson())
+            }
+        }
+    }
+
+    private fun alarmsJson(): String {
+        val a = JSONArray()
+        AlarmScheduler.alarms().forEach {
+            val days = JSONArray()
+            for (i in 0 until 7) if ((it.days and (1 shl i)) != 0) days.put(i)
+            a.put(JSONObject().put("id", it.id).put("on", it.enabled).put("time", it.time()).put("days", days).put("label", it.label))
+        }
+        val o = JSONObject().put("t", "alarms").put("alarms", a)
+        AlarmScheduler.next()?.let { (_, at) -> o.put("next", AlarmBook.whenText(at, TimeZone.getDefault())) }
+        return o.toString()
     }
 
     // ── state ──────────────────────────────────────────────────────────────────────
