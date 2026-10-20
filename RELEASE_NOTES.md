@@ -3,6 +3,10 @@
 Mỗi bản một mục `## v<versionName>`. Khi phát hành, đoạn văn dưới mục đó được đưa vào trang Release
 và vào ô "Bản mới nhất" trong trang điều khiển của loa -- viết ngắn, cho người dùng đọc.
 
+## v1.5.29
+
+- Màn hình phụ, trang trò chuyện: khuôn mặt vẽ tay được thay bằng bộ biểu cảm emoji mặc định của xiaozhi (21 mặt Twemoji: vui, cười, buồn, giận, khóc, yêu, ngạc nhiên, suy nghĩ, buồn ngủ…), hiện theo cảm xúc máy chủ gửi kèm câu trả lời. Viền xanh nhấp nháy khi loa đang nghe, emoji nhún nhẹ khi loa đang nói.
+
 ## v1.5.28
 
 - Màn hình phụ xoay dọc: đồng hồ lật nằm một hàng, tự co theo chiều ngang màn hình; thời tiết xếp thành cột giữa màn hình (biểu tượng + nhiệt độ, rồi mô tả và thành phố) nên không còn bị tràn mất biểu tượng.

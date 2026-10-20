@@ -29,6 +29,7 @@
 #include "display.h"
 #include "touch.h"
 #include "video.h"
+#include "emoji.h"
 #include "board.h"
 #ifdef ESP_PLATFORM
 #include "freertos/FreeRTOS.h"
@@ -168,7 +169,7 @@ static char c_ids[LINK_MAX_FOUND][48];
 static int c_count = -1;
 static uint32_t c_hash;
 /* voice */
-static lv_obj_t *v_face, *v_eye[2], *v_mouth_arc, *v_mouth_o, *v_state, *v_scroll, *v_user, *v_bot, *v_btn;
+static lv_obj_t *v_face, *v_emo, *v_state, *v_scroll, *v_user, *v_bot, *v_btn;
 static int v_anim;
 /* music */
 static lv_obj_t *vid_btn, *v_layer, *v_img, *v_msg;   // picture of the song (video.c)
@@ -524,24 +525,11 @@ static void build_voice(lv_obj_t *p)
     lv_obj_set_style_bg_opa(v_face, LV_OPA_COVER, 0);
     lv_obj_set_style_border_width(v_face, 3, 0);
     lv_obj_set_style_border_color(v_face, lv_color_hex(C_ACCENT), 0);
-    for (int i = 0; i < 2; i++) {
-        v_eye[i] = box(v_face, 0, 0, 20, 30);
-        lv_obj_set_style_radius(v_eye[i], 10, 0);
-        lv_obj_set_style_bg_opa(v_eye[i], LV_OPA_COVER, 0);
-        lv_obj_set_style_bg_color(v_eye[i], lv_color_hex(C_TEXT), 0);
-    }
-    v_mouth_arc = lv_arc_create(v_face);
-    lv_obj_remove_style(v_mouth_arc, NULL, LV_PART_KNOB);
-    lv_obj_remove_flag(v_mouth_arc, LV_OBJ_FLAG_CLICKABLE);
-    lv_obj_set_style_arc_opa(v_mouth_arc, LV_OPA_TRANSP, LV_PART_INDICATOR);
-    lv_obj_set_style_arc_width(v_mouth_arc, 5, LV_PART_MAIN);
-    lv_obj_set_style_arc_rounded(v_mouth_arc, true, LV_PART_MAIN);
-    lv_obj_set_style_arc_color(v_mouth_arc, lv_color_hex(C_TEXT), LV_PART_MAIN);
-    lv_obj_set_style_pad_all(v_mouth_arc, 0, 0);
-    v_mouth_o = box(v_face, 0, 0, 18, 18);
-    lv_obj_set_style_radius(v_mouth_o, LV_RADIUS_CIRCLE, 0);
-    lv_obj_set_style_bg_opa(v_mouth_o, LV_OPA_COVER, 0);
-    lv_obj_set_style_bg_color(v_mouth_o, lv_color_hex(C_TEXT), 0);
+    // the face: the xiaozhi emoji for the emotion the server sent (emoji.c)
+    v_emo = lv_image_create(v_face);
+    lv_image_set_src(v_emo, emoji_face("neutral"));
+    lv_obj_remove_flag(v_emo, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_center(v_emo);
 
     v_state = label(p, &font_vn14, C_ACCENT, "");
     lv_obj_set_width(v_state, PORT ? LCD_H_RES : 132);
@@ -569,69 +557,19 @@ static void build_voice(lv_obj_t *p)
     lv_label_set_long_mode(v_bot, LV_LABEL_LONG_WRAP);
 }
 
-/* The face: eye height, eye lift, mouth (smile > 0, frown < 0, 'o' = 99, flat = 0), colour. */
-static void face(int eye_h, int lift, int mouth, uint32_t color, int open)
-{
-    const int cx = 58 - 3, cy = 58 - 3;   // inside the border
-    for (int i = 0; i < 2; i++) {
-        int w = eye_h > 30 ? 24 : 20;
-        lv_obj_set_size(v_eye[i], w, eye_h);
-        lv_obj_set_style_radius(v_eye[i], eye_h < 10 ? 3 : w / 2, 0);
-        lv_obj_set_pos(v_eye[i], cx + (i ? 14 : -14 - w), cy - 14 - eye_h / 2 - lift);
-        lv_obj_set_style_bg_color(v_eye[i], lv_color_hex(color), 0);
-    }
-    lv_obj_set_style_border_color(v_face, lv_color_hex(color == C_TEXT ? C_ACCENT : color), 0);
-    if (mouth == 99 || open > 0) {
-        int d = mouth == 99 ? 18 : 6 + open;
-        lv_obj_remove_flag(v_mouth_o, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_add_flag(v_mouth_arc, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_set_size(v_mouth_o, mouth == 99 ? 18 : 26, d);
-        lv_obj_set_style_radius(v_mouth_o, mouth == 99 ? LV_RADIUS_CIRCLE : 8, 0);
-        lv_obj_set_pos(v_mouth_o, cx - (mouth == 99 ? 9 : 13), cy + 22 - d / 2);
-        lv_obj_set_style_bg_color(v_mouth_o, lv_color_hex(color), 0);
-        return;
-    }
-    lv_obj_add_flag(v_mouth_o, LV_OBJ_FLAG_HIDDEN);
-    lv_obj_remove_flag(v_mouth_arc, LV_OBJ_FLAG_HIDDEN);
-    lv_obj_set_style_arc_color(v_mouth_arc, lv_color_hex(color), LV_PART_MAIN);
-    if (mouth > 0) {          // smile: the lower part of a circle
-        int r = mouth > 1 ? 22 : 18;
-        lv_obj_set_size(v_mouth_arc, r * 2, r * 2);
-        lv_obj_set_pos(v_mouth_arc, cx - r, cy + 4 - r + (mouth > 1 ? 0 : 4));
-        lv_arc_set_bg_angles(v_mouth_arc, 30, 150);
-    } else if (mouth < 0) {   // frown: the upper part
-        lv_obj_set_size(v_mouth_arc, 36, 36);
-        lv_obj_set_pos(v_mouth_arc, cx - 18, cy + 26);
-        lv_arc_set_bg_angles(v_mouth_arc, 215, 325);
-    } else {                  // flat: a very wide, shallow smile
-        lv_obj_set_size(v_mouth_arc, 80, 80);
-        lv_obj_set_pos(v_mouth_arc, cx - 40, cy + 22 - 80 + 4);
-        lv_arc_set_bg_angles(v_mouth_arc, 76, 104);
-    }
-}
-
+/* The face: the emoji of the emotion, a ring that tells listening (green, pulsing) from speaking
+ * (accent) and thinking (muted), and a little bounce while the assistant speaks. */
 static void update_face(void)
 {
-    const char *e = st.emo;
     bool listening = !strcmp(st.vs, "LISTENING");
     bool speaking = !strcmp(st.vs, "SPEAKING");
-    int eye = 30, lift = 0, mouth = 1, open = 0;
-    uint32_t col = C_TEXT;
-    if (!strcmp(e, "happy") || !strcmp(e, "laughing") || !strcmp(e, "funny") || !strcmp(e, "loving") ||
-        !strcmp(e, "delicious") || !strcmp(e, "kissy") || !strcmp(e, "silly")) { eye = 14; mouth = 2; }
-    else if (!strcmp(e, "sad") || !strcmp(e, "crying")) { eye = 22; mouth = -1; col = P->sad; }
-    else if (!strcmp(e, "angry")) { eye = 16; mouth = -1; col = P->err; }
-    else if (!strcmp(e, "surprised") || !strcmp(e, "shocked")) { eye = 36; mouth = 99; }
-    else if (!strcmp(e, "thinking") || !strcmp(e, "confused")) { eye = 24; lift = 6; mouth = 0; }
-    else if (!strcmp(e, "sleepy") || !strcmp(e, "relaxed")) { eye = 6; mouth = 0; }
-    else if (!strcmp(e, "cool") || !strcmp(e, "confident") || !strcmp(e, "winking")) { eye = 12; mouth = 1; }
-    else if (!strcmp(e, "embarrassed")) { eye = 20; mouth = 0; col = P->pink; }
-    if (listening) { col = P->ok; mouth = mouth == 99 ? 99 : 0; eye = eye < 24 ? 26 : eye; }
+    const lv_image_dsc_t *img = emoji_face(st.emo);
+    if (lv_image_get_src(v_emo) != (const void *)img) lv_image_set_src(v_emo, img);
     v_anim++;
-    if (speaking && mouth != 99) open = (int[]){ 2, 8, 14, 6, 12, 4, 10, 16 }[v_anim % 8];
-    // blink now and then
-    if (!speaking && (v_anim % 40) == 0) eye = 4;
-    face(eye, lift, mouth, col, open);
+    static const int8_t BOB[8] = { 0, -2, -4, -5, -4, -2, 0, 1 };
+    lv_obj_align(v_emo, LV_ALIGN_CENTER, 0, speaking ? BOB[v_anim % 8] : 0);
+    lv_obj_set_style_border_color(v_face, lv_color_hex(listening ? P->ok : speaking ? C_ACCENT : C_LINE), 0);
+    lv_obj_set_style_border_width(v_face, listening ? ((v_anim / 4) % 2 ? 5 : 3) : 3, 0);
     set_text(v_state, listening ? "Đang nghe…" : speaking ? "Đang nói…" : st.awake ? "Đang nghĩ…" : "");
     // while awake the button ends the conversation; otherwise it calls the speaker
     btn_text(v_btn, (st.awake || talking()) ? I_MICOFF "  Tắt nghe" : I_MIC "  Gọi loa");
