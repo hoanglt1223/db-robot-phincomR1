@@ -3,6 +3,10 @@
 Mỗi bản một mục `## v<versionName>`. Khi phát hành, đoạn văn dưới mục đó được đưa vào trang Release
 và vào ô "Bản mới nhất" trong trang điều khiển của loa -- viết ngắn, cho người dùng đọc.
 
+## v1.5.30
+
+- Cảm xúc của trợ lý (emoji trên màn hình phụ) giờ đổi theo từng câu trả lời: loa đọc trường `emotion` máy chủ gửi kèm (như firmware xiaozhi), nếu máy chủ chỉ gửi emoji thì đọc emoji, còn nếu máy chủ không gửi gì thì loa tự đoán từ câu trả lời (emoji trong câu, hoặc các từ như "haha", "xin lỗi", "chúc mừng"…). Mặt suy nghĩ hiện sau khi bạn nói xong, mặt trung tính khi bắt đầu phiên. Nhật ký của loa ghi lần đầu nhận cảm xúc từ máy chủ để kiểm tra. Cần cập nhật ứng dụng trên loa (màn hình phụ giữ bản 1.5.29).
+
 ## v1.5.29
 
 - Màn hình phụ, trang trò chuyện: khuôn mặt vẽ tay được thay bằng bộ biểu cảm emoji mặc định của xiaozhi (21 mặt Twemoji: vui, cười, buồn, giận, khóc, yêu, ngạc nhiên, suy nghĩ, buồn ngủ…), hiện theo cảm xúc máy chủ gửi kèm câu trả lời. Viền xanh nhấp nháy khi loa đang nghe, emoji nhún nhẹ khi loa đang nói.

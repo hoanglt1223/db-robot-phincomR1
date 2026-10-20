@@ -40,7 +40,10 @@ class VoiceAssistant @Inject constructor(
 
     @Volatile private var isAwake = false
         set(v) {
-            if (v && !field) AddressAnnouncement.sessions++
+            if (v && !field) {
+                AddressAnnouncement.sessions++
+                setEmotion("neutral")        // a new conversation starts with a calm face, as the firmware does
+            }
             field = v
             VoiceDebugState.awake = v
         }
@@ -410,12 +413,24 @@ class VoiceAssistant @Inject constructor(
         LocalMusicPlayer.releaseAfterVoice()
     }
 
+    /** The emotion came from the server for the reply being spoken (else it is guessed from the text). */
+    private var serverEmotion = false
+    private var emotionLogged = false
+
+    private fun setEmotion(e: String) {
+        if (emotion.value == e && VoiceDebugState.emotion == e) return
+        emotion.value = e
+        VoiceDebugState.emotion = e
+    }
+
     private fun handleServerMessage(json: JSONObject) {
         lastServerFrameAt = System.currentTimeMillis()
         when (json.optString("type")) {
             "tts" -> when (json.optString("state")) {
                 "start" -> {
                     aborted = false
+                    // the reply starts and the server gave no emotion: smile (the xiaozhi server's own default)
+                    if (!serverEmotion && emotion.value == "thinking") setEmotion("happy")
                     val willSet = state.value != VoiceState.LISTENING || state.value == VoiceState.IDLE
                     Log.i(TAG, "tts start: state=${state.value} willSetSpeaking=$willSet t=${System.currentTimeMillis()}")
                     if (willSet) {
@@ -455,7 +470,11 @@ class VoiceAssistant @Inject constructor(
                         }
                     }
                 }
-                "sentence_start" -> json.optString("text").takeIf { it.isNotEmpty() }?.let { addMessage("assistant", it) }
+                "sentence_start" -> json.optString("text").takeIf { it.isNotEmpty() }?.let {
+                    addMessage("assistant", it)
+                    // no emotion from the server for this reply: read it from the reply itself
+                    if (!serverEmotion) EmotionGuess.fromText(it)?.let { e -> setEmotion(e) }
+                }
             }
             "stt" -> json.optString("text").takeIf { it.isNotEmpty() }?.let {
                 Log.i(TAG, "stt: text=$it t=${System.currentTimeMillis()}")
@@ -464,10 +483,22 @@ class VoiceAssistant @Inject constructor(
                 // fire 'tts stop'), not conversation turns, and ends the session mid-chat after ~2 turns.
                 autoTurns = 0
                 addMessage("user", it)
+                serverEmotion = false
+                setEmotion("thinking")           // the user has spoken: the face thinks until the reply
             }
-            "llm" -> json.optString("emotion").takeIf { it.isNotEmpty() }?.let {
-                emotion.value = it
-                VoiceDebugState.emotion = it
+            "llm" -> {
+                // {"type":"llm","text":"😊","emotion":"happy"} — as the xiaozhi firmware reads it; some
+                // servers send only the emoji, so that is read too
+                val raw = json.optString("emotion")
+                val e = EmotionGuess.clean(raw) ?: EmotionGuess.fromEmoji(json.optString("text"))
+                if (!emotionLogged) {
+                    emotionLogged = true
+                    AppLog.i("Máy chủ gửi cảm xúc: \"$raw\" ${json.optString("text")} -> ${e ?: "không dùng được"}")
+                }
+                if (e != null) {
+                    serverEmotion = true
+                    setEmotion(e)
+                }
             }
             "media_queue" -> {
                 val items = json.optJSONArray("items")
