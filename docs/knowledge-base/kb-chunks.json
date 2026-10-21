@@ -1,35 +1,93 @@
 {
-  "_note": "sv1.dbrobot.vn passes the assistant only the first ~160 characters of each search hit, so every document here is one question whose answer fits in that limit. Upload each entry as its own document; the .md files beside this are the long-form source.",
-  "Hướng dẫn sử dụng loa": [
-    ["Loa làm được gì", "Loa DB-Robot làm được: trò chuyện, mở nhạc, radio, podcast, báo thức, giờ, thời tiết, giá vàng, giá xăng, lịch âm, tử vi, nhà thông minh."],
-    ["Gọi loa", "Gọi loa: nói \"OK Nabu\" hoặc bấm nút trên đỉnh loa. Đổi từ gọi sang Alexa hay Nabi ơi ở trang điều khiển, tab System, thẻ Wake word."],
-    ["Trang điều khiển", "Trang điều khiển loa: mở http://IP-của-loa:8088 trên điện thoại cùng Wi-Fi. Hỏi loa \"địa chỉ IP của bạn là gì\" để biết IP."],
-    ["Mất Wi-Fi, nói ni hao", "Loa mất Wi-Fi, nói ni hao: giữ nút trên đỉnh 6 giây, nối điện thoại vào Wi-Fi Phicomm R1, mở 192.168.43.1:8088, thẻ Wi-Fi, chọn mạng nhà."],
-    ["Đổi Wi-Fi", "Đổi Wi-Fi cho loa: trang điều khiển, tab System, thẻ Wi-Fi, Quét mạng, chọn mạng, nhập mật khẩu, Kết nối. Sai thì loa tự về mạng cũ."],
-    ["Loa không trả lời", "Loa không trả lời hoặc bị đơ: rút điện loa 10 giây rồi cắm lại. Ứng dụng DB-Robot tự chạy khi loa khởi động."],
-    ["Nghe nhầm tiếng tivi", "Loa nghe nhầm tiếng tivi, tiếng nhạc: bấm Tắt nghe ở góc dưới trái trang điều khiển, hoặc bật Tắt khi phát nhạc trong thẻ Wake word."],
-    ["Đặt báo thức", "Đặt báo thức: trang điều khiển, tab System, thẻ Báo thức, bấm + Thêm, chọn giờ và ngày lặp. Tắt chuông bằng nút trên đỉnh loa."],
-    ["Mở nhạc, radio", "Mở nhạc, radio: nói \"mở bài Nơi này có anh\", \"mở VOV giao thông\", \"dừng nhạc\", \"âm lượng 70\". Loa có 8 kênh radio VOV."],
-    ["Phát nhạc từ điện thoại", "Phát nhạc từ điện thoại ra loa: iPhone dùng AirPlay, Android dùng app AirMusic, máy tính dùng TuneBlade. Phải cùng Wi-Fi với loa."],
-    ["Cập nhật phần mềm", "Cập nhật loa: tab System, thẻ Cập nhật phần mềm, bấm Cập nhật ngay, hoặc bật Tự động cập nhật. Cài đặt được giữ nguyên."],
-    ["Nhóm loa", "Phát nhiều loa cùng lúc: tab System, thẻ Nhóm loa, bấm Tìm loa trong mạng, chọn loa rồi bật Phát cùng các loa trong nhóm."],
-    ["Bluetooth", "Nối loa với loa Bluetooth hoặc tai nghe: tab System, thẻ Bluetooth, quét rồi chọn thiết bị để ghép đôi; âm thanh sẽ phát ra đó."]
-  ],
-  "Ngày lễ Việt Nam": [
-    ["Ngày nghỉ lễ hưởng lương", "Nghỉ lễ hưởng lương: 1/1, Tết Âm lịch 5 ngày, Giỗ Tổ 10/3 âm, 30/4, 1/5, Quốc khánh 2/9 và 1 ngày liền kề. Tổng 11 ngày mỗi năm."],
-    ["Nghỉ Tết 2027", "Nghỉ Tết 2027 (Đinh Mùi): công chức nghỉ 7 ngày, thứ Năm 4/2 đến thứ Tư 10/2/2027. Mùng 1 Tết là thứ Bảy 6/2/2027, không có 30 Tết."],
-    ["Nghỉ Quốc khánh 2027", "Nghỉ Quốc khánh 2027: công chức nghỉ 4 ngày liên tục, từ thứ Năm 2/9 đến hết Chủ nhật 5/9/2027."],
-    ["Giỗ Tổ Hùng Vương 2027", "Giỗ Tổ Hùng Vương 2027 (10/3 âm lịch) là thứ Sáu 16/4/2027, được nghỉ hưởng lương."],
-    ["Lễ âm lịch 2027", "Lễ âm lịch 2027: Rằm tháng Giêng 20/2, Phật đản 20/5, Đoan ngọ 9/6, Vu Lan 16/8, Trung thu 15/9. Ông Táo 30/1/2027 và 19/1/2028."],
-    ["Ngày Văn hóa 24/11", "Ngày 24/11 (Ngày Văn hóa Việt Nam) mới được đề xuất thành ngày nghỉ hưởng lương; tính đến 21/10/2026 luật chưa được xác nhận thông qua."],
-    ["Ngày kỷ niệm", "Ngày kỷ niệm, không phải ngày nghỉ: 14/2 Tình nhân, 8/3 Phụ nữ, 1/6 Thiếu nhi, 20/10 Phụ nữ Việt Nam, 20/11 Nhà giáo, 25/12 Giáng sinh."]
-  ],
-  "Số khẩn cấp": [
-    ["Các số khẩn cấp", "Số khẩn cấp ở Việt Nam, gọi miễn phí: 113 công an, 114 cứu hỏa và cứu nạn, 115 cấp cứu, 111 bảo vệ trẻ em, 112 tìm kiếm cứu nạn."],
-    ["Cháy nhà", "Cháy nhà, cháy nổ, người mắc kẹt, đuối nước: gọi ngay 114, Cảnh sát phòng cháy chữa cháy và cứu nạn cứu hộ."],
-    ["Cấp cứu", "Người bệnh nặng, tai nạn, cần xe cấp cứu: gọi 115, nói rõ địa chỉ và tình trạng người bệnh, đừng cúp máy trước khi được cho phép."],
-    ["Trộm cướp", "Cướp, trộm, đánh nhau, gây rối: gọi 113, Công an."],
-    ["Bảo vệ trẻ em", "Trẻ em bị bạo lực, bị xâm hại: gọi 111, Tổng đài quốc gia bảo vệ trẻ em, miễn phí 24/24 giờ."],
-    ["Mất điện ở Thành phố Hồ Chí Minh", "Mất điện, sự cố điện ở TP.HCM: gọi tổng đài EVNHCMC 1900 545454, trực 24/24. Cuộc gọi thật của điện lực hiện tên EVNHCMC."]
+  "_note": "sv1.dbrobot.vn passes the assistant only the first ~160 characters of each search hit, so every document here is one question whose answer fits in that limit. Upload each entry as its own document; the .md files beside this are the long-form source. sv1.dbrobot.vn also caps an account at 3 knowledge bases and 30 documents, so the shared entries live in one knowledge base and the per-family ones (kept only on the server, not in git) in the others.",
+  "Kiến thức chung": [
+    [
+      "Loa làm được gì",
+      "Loa DB-Robot làm được: trò chuyện, mở nhạc, radio, podcast, báo thức, giờ, thời tiết, giá vàng, giá xăng, lịch âm, tử vi, nhà thông minh."
+    ],
+    [
+      "Gọi loa",
+      "Gọi loa: nói \"OK Nabu\" hoặc bấm nút trên đỉnh loa. Đổi từ gọi sang Alexa hay Nabi ơi ở trang điều khiển, tab System, thẻ Wake word."
+    ],
+    [
+      "Trang điều khiển",
+      "Trang điều khiển loa: mở http://IP-của-loa:8088 trên điện thoại cùng Wi-Fi. Hỏi loa \"địa chỉ IP của bạn là gì\" để biết IP."
+    ],
+    [
+      "Mất Wi-Fi, nói ni hao",
+      "Loa mất Wi-Fi, nói ni hao: giữ nút trên đỉnh 6 giây, nối điện thoại vào Wi-Fi Phicomm R1, mở 192.168.43.1:8088, thẻ Wi-Fi, chọn mạng nhà."
+    ],
+    [
+      "Đổi Wi-Fi",
+      "Đổi Wi-Fi cho loa: trang điều khiển, tab System, thẻ Wi-Fi, Quét mạng, chọn mạng, nhập mật khẩu, Kết nối. Sai thì loa tự về mạng cũ."
+    ],
+    [
+      "Loa không trả lời",
+      "Loa không trả lời hoặc bị đơ: rút điện loa 10 giây rồi cắm lại. Ứng dụng DB-Robot tự chạy khi loa khởi động."
+    ],
+    [
+      "Nghe nhầm tiếng tivi",
+      "Loa nghe nhầm tiếng tivi, tiếng nhạc: bấm Tắt nghe ở góc dưới trái trang điều khiển, hoặc bật Tắt khi phát nhạc trong thẻ Wake word."
+    ],
+    [
+      "Đặt báo thức",
+      "Đặt báo thức: trang điều khiển, tab System, thẻ Báo thức, bấm + Thêm, chọn giờ và ngày lặp. Tắt chuông bằng nút trên đỉnh loa."
+    ],
+    [
+      "Mở nhạc, radio",
+      "Mở nhạc, radio: nói \"mở bài Nơi này có anh\", \"mở VOV giao thông\", \"dừng nhạc\", \"âm lượng 70\". Loa có 8 kênh radio VOV."
+    ],
+    [
+      "Phát nhạc từ điện thoại",
+      "Phát nhạc từ điện thoại ra loa: iPhone dùng AirPlay, Android dùng app AirMusic, máy tính dùng TuneBlade. Phải cùng Wi-Fi với loa."
+    ],
+    [
+      "Cập nhật phần mềm",
+      "Cập nhật loa: tab System, thẻ Cập nhật phần mềm, bấm Cập nhật ngay, hoặc bật Tự động cập nhật. Cài đặt được giữ nguyên."
+    ],
+    [
+      "Nhóm loa",
+      "Phát nhiều loa cùng lúc: tab System, thẻ Nhóm loa, bấm Tìm loa trong mạng, chọn loa rồi bật Phát cùng các loa trong nhóm."
+    ],
+    [
+      "Bluetooth",
+      "Nối loa với loa Bluetooth hoặc tai nghe: tab System, thẻ Bluetooth, quét rồi chọn thiết bị để ghép đôi; âm thanh sẽ phát ra đó."
+    ],
+    [
+      "Ngày nghỉ lễ hưởng lương",
+      "Nghỉ lễ hưởng lương: 1/1, Tết Âm lịch 5 ngày, Giỗ Tổ 10/3 âm, 30/4, 1/5, Quốc khánh 2/9 và 1 ngày liền kề. Tổng 11 ngày mỗi năm."
+    ],
+    [
+      "Nghỉ Tết 2027",
+      "Nghỉ Tết 2027 (Đinh Mùi): công chức nghỉ 7 ngày, thứ Năm 4/2 đến thứ Tư 10/2/2027. Mùng 1 Tết là thứ Bảy 6/2/2027, không có 30 Tết."
+    ],
+    [
+      "Nghỉ Quốc khánh 2027",
+      "Nghỉ Quốc khánh 2027: công chức nghỉ 4 ngày liên tục, từ thứ Năm 2/9 đến hết Chủ nhật 5/9/2027."
+    ],
+    [
+      "Giỗ Tổ Hùng Vương 2027",
+      "Giỗ Tổ Hùng Vương 2027 (10/3 âm lịch) là thứ Sáu 16/4/2027, được nghỉ hưởng lương."
+    ],
+    [
+      "Lễ âm lịch 2027",
+      "Lễ âm lịch 2027: Rằm tháng Giêng 20/2, Phật đản 20/5, Đoan ngọ 9/6, Vu Lan 16/8, Trung thu 15/9. Ông Táo 30/1/2027 và 19/1/2028."
+    ],
+    [
+      "Ngày Văn hóa 24/11",
+      "Ngày 24/11 (Ngày Văn hóa Việt Nam) mới được đề xuất thành ngày nghỉ hưởng lương; tính đến 21/10/2026 luật chưa được xác nhận thông qua."
+    ],
+    [
+      "Ngày kỷ niệm",
+      "Ngày kỷ niệm, không phải ngày nghỉ: 14/2 Tình nhân, 8/3 Phụ nữ, 1/6 Thiếu nhi, 20/10 Phụ nữ Việt Nam, 20/11 Nhà giáo, 25/12 Giáng sinh."
+    ],
+    [
+      "Các số khẩn cấp",
+      "Số khẩn cấp ở Việt Nam, gọi miễn phí: 113 công an, 114 cứu hỏa và cứu nạn, 115 cấp cứu, 111 bảo vệ trẻ em, 112 tìm kiếm cứu nạn."
+    ],
+    [
+      "Mất điện ở Thành phố Hồ Chí Minh",
+      "Mất điện, sự cố điện ở TP.HCM: gọi tổng đài EVNHCMC 1900 545454, trực 24/24. Cuộc gọi thật của điện lực hiện tên EVNHCMC."
+    ]
   ]
 }
