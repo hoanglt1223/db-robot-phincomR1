@@ -1,12 +1,13 @@
 # One step of the Phicomm firmware upgrade chain (see docs/firmware-upgrade.md). Run it, let the
 # speaker reboot and install the patch, then run it again until it reports 3448.
 #
-#   .\tools\firmware\upgrade-firmware.ps1 -Ip 192.168.1.224 -PackageDir D:\path\to\firmware
+#   .\tools\firmware\upgrade-firmware.ps1 -Ip 192.168.1.224
 #
-# -PackageDir holds the incremental-ota-<build>.zip files listed in manifest.txt.
+# Packages are read from tools/firmware/packages; a missing one is downloaded from the
+# firmware-3448 release of this repo (see manifest.txt for sizes and md5).
 param(
     [Parameter(Mandatory = $true)][string]$Ip,
-    [Parameter(Mandatory = $true)][string]$PackageDir
+    [string]$PackageDir = (Join-Path $PSScriptRoot "packages")
 )
 $adb = Join-Path $env:LOCALAPPDATA "Android\Sdk\platform-tools\adb.exe"
 if (-not (Test-Path $adb)) { $adb = "adb" }
@@ -20,7 +21,12 @@ if ($ver -eq "3448") { Write-Host "Firmware is 3448, the last Phicomm build. Not
 $prop = Join-Path $PSScriptRoot "ota\ota-$ver.txt"
 $zip = Join-Path $PackageDir "incremental-ota-$ver.zip"
 if (-not (Test-Path $prop)) { throw "no upgrade path from build $ver" }
-if (-not (Test-Path $zip)) { throw "missing $zip" }
+if (-not (Test-Path $zip)) {
+    New-Item -ItemType Directory -Force $PackageDir | Out-Null
+    $url = "https://github.com/hoanglt1223/db-robot-phincomR1/releases/download/firmware-3448/incremental-ota-$ver.zip"
+    Write-Host "Downloading $url"
+    Invoke-WebRequest -UseBasicParsing $url -OutFile $zip
+}
 $want = ((Get-Content $prop | Select-String "^ota_debug_md5=") -replace "^ota_debug_md5=", "").ToString().Trim()
 $have = (Get-FileHash $zip -Algorithm MD5).Hash.ToLower()
 if ($want -ne $have) { throw "$zip md5 $have, expected $want" }

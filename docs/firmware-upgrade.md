@@ -6,10 +6,14 @@ nâng khi cần. Đã làm trên loa thật ngày 21/10/2026: 3174 → 3318 → 
 ## Cần gì
 
 - adb (`Android\Sdk\platform-tools`) và loa mở adb ở cổng 5555.
-- Các gói `incremental-ota-<build>.zip`. Gói là bản vá chính thức của Phicomm, được recovery kiểm chữ
-  ký trước khi cài, nên gói sai bản sẽ bị từ chối chứ không cài dở. Gói không nằm trong git
-  (khoảng 66 MB); kích thước và md5 của từng gói ở [`tools/firmware/manifest.txt`](../tools/firmware/manifest.txt).
-  Nguồn: bộ "Update-PhicommR1-v5.2.0" (AI-BOX-PLUS) hoặc "R1 One-click FW upgrade v2.3".
+- Các gói `incremental-ota-<build>.zip`, đăng ở release
+  [`firmware-3448`](https://github.com/hoanglt1223/db-robot-phincomR1/releases/tag/firmware-3448)
+  của repo này (khoảng 80 MB, không nằm trong git: repo là fork nên GitHub không nhận Git LFS). Script
+  tự tải gói còn thiếu về `tools/firmware/packages` (thư mục bị gitignore). Gói là
+  bản vá chính thức của Phicomm, được recovery kiểm chữ ký trước khi cài, nên gói sai bản sẽ bị từ chối
+  chứ không cài dở. md5 từng gói ở [`tools/firmware/manifest.txt`](../tools/firmware/manifest.txt).
+  Lấy từ bộ "Update-PhicommR1-v5.2.0" (AI-BOX-PLUS) và "R1 One-click FW upgrade v2.3"; Phicomm đã
+  ngừng hoạt động nên không còn nguồn chính thức.
 
 ## Đường nâng cấp
 
@@ -19,7 +23,7 @@ Mỗi bản vá chỉ áp lên đúng một bản. File `tools/firmware/ota/ota-
 |---|---|---|
 | 3119 | 3166 | `incremental-ota-3119.zip` |
 | 3166 | 3331 | `incremental-ota-3166.zip` (bản Update v5.2.0) |
-| 3166 | 3415 | `incremental-ota-3166.zip` của One-click v2.3, cấu hình `ota-3166-to-3415.txt` (khác md5) |
+| 3166 | 3415 | `incremental-ota-3166-to-3415.zip` (bản của One-click v2.3) với `ota-3166-to-3415.txt`; làm tay, đẩy vào loa với tên `incremental-ota-3166.zip` |
 | 3174 | 3318 | `incremental-ota-3174.zip` |
 | 3318 | 3331 | `incremental-ota-3318.zip` |
 | 3331 | 3448 | `incremental-ota-3331.zip` |
@@ -28,7 +32,7 @@ Mỗi bản vá chỉ áp lên đúng một bản. File `tools/firmware/ota/ota-
 ## Cách chạy
 
 ```powershell
-.\tools\firmware\upgrade-firmware.ps1 -Ip 192.168.1.224 -PackageDir D:\path\to\firmware
+.\tools\firmware\upgrade-firmware.ps1 -Ip 192.168.1.224
 ```
 
 Mỗi lần chạy làm một bước: đọc bản hiện tại, kiểm md5 gói, đẩy gói và `otaprop.txt` vào `/sdcard`,
@@ -47,7 +51,7 @@ rồi khởi động lại loa. Chạy lại sau khi loa lên bản mới, cho t
   `pm path`. Gọi thẳng như `/system/bin/pm` vẫn làm:
   `export CLASSPATH=/system/framework/pm.jar; app_process /system/bin com.android.commands.pm.Pm <lệnh>`.
   [`tools/install-apk.ps1`](../tools/install-apk.ps1) và script nâng firmware dùng cách này.
-- Bộ AI-BOX-PLUS còn cài `new_EchoService.apk` (thay `com.phicomm.speaker.player`) trước bước đầu.
+- Bộ AI-BOX-PLUS còn cài `new_EchoService.apk` (thay `com.phicomm.speaker.player`, cũng có trong release) trước bước đầu.
   Chưa rõ việc nâng firmware có cần nó không; lần chạy ngày 21/10 đã cài nó.
 
 ## Sau khi nâng
