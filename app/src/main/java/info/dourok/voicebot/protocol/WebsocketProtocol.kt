@@ -60,6 +60,14 @@ class WebsocketProtocol(private val deviceInfo: DeviceInfo,
 
     private var isOpen: Boolean = false
     private var websocket: WebSocket? = null
+
+    // Which connection is the current one. openAudioChannel closes the old socket and opens a new
+    // one at once, but the old socket's onClosed/onFailure arrive later -- and used to null out and
+    // CLOSE the new channel. Measured 2026-10-21: after any session that ended badly (an agent
+    // edited on the server, an LLM 429/503), every reconnect logged "Đã nối server" then
+    // "Lỗi kết nối server: null" and was torn down, until the app restarted. Callbacks of a socket
+    // that is no longer current are now ignored.
+    @Volatile private var generation = 0
     private val client = OkHttpClient.Builder()
         .connectTimeout(10, TimeUnit.SECONDS)
         .readTimeout(10, TimeUnit.SECONDS)
@@ -152,8 +160,16 @@ class WebsocketProtocol(private val deviceInfo: DeviceInfo,
         }
 
         // Open the WebSocket.
+        val mine = ++generation
         websocket = client.newWebSocket(request, object : WebSocketListener() {
+            private fun stale(event: String): Boolean {
+                if (mine == generation) return false
+                Log.i(TAG, "ignoring $event of a replaced connection")
+                return true
+            }
+
             override fun onOpen(webSocket: WebSocket, response: Response) {
+                if (stale("open")) { webSocket.close(1000, "replaced"); return }
                 isOpen = true
                 Log.i(TAG, "WebSocket connected")
                 AppLog.i("Đã nối server")
@@ -218,6 +234,7 @@ class WebsocketProtocol(private val deviceInfo: DeviceInfo,
             }
 
             override fun onMessage(webSocket: WebSocket, text: String) {
+                if (stale("message")) return
                 Log.i(TAG, "WebSocket message: $text")
                 scope.launch {
                     val json = JSONObject(text)
@@ -231,6 +248,7 @@ class WebsocketProtocol(private val deviceInfo: DeviceInfo,
             }
 
             override fun onMessage(webSocket: WebSocket, bytes: ByteString) {
+                if (stale("audio")) return
                 // Log.i(TAG, "WebSocket binary message: ${bytes.size}")
                 scope.launch {
                     incomingAudioFlow.emit(bytes.toByteArray())
@@ -242,6 +260,7 @@ class WebsocketProtocol(private val deviceInfo: DeviceInfo,
                 super.onClosing(webSocket, code, reason)
             }
             override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
+                if (stale("close")) return
                 isOpen = false
                 Log.i(TAG, "WebSocket closed: $code: $reason")
                 AppLog.i("Server đóng kết nối ($code${if (reason.isNotBlank()) ": $reason" else ""})")
@@ -252,6 +271,7 @@ class WebsocketProtocol(private val deviceInfo: DeviceInfo,
             }
 
             override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
+                if (stale("failure")) return
                 isOpen = false
                 t.printStackTrace()
                 Log.e(TAG, "WebSocket error: ${t.message}")
