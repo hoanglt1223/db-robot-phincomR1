@@ -86,6 +86,8 @@ class ControlServer @Inject constructor(
         }
         // An update replaces the package, and with it every alarm AlarmManager held for it.
         try { info.dourok.voicebot.alarm.AlarmScheduler.reschedule(context) } catch (e: Exception) { }
+        // Fetch the added MCP servers' tools now, so the first conversation after boot has them.
+        DeviceTools.remoteServers
     }
 
     /**
