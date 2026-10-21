@@ -19,3 +19,7 @@ local.properties
 
 # Local Claude Code agent settings (not part of the project)
 .claude/
+
+# Third-party R1 installer bundles (firmware zips, APKs, adb); kept locally, see docs/firmware-upgrade.md
+/Update-PhicommR1-v5.2.0/
+/R1 One-click FW upgrade/

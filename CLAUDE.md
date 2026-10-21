@@ -393,6 +393,14 @@ Chữa bằng shell 8080: **`setprop ctl.restart adbd`** (pid 214 → 13669). `i
 còn adbd chạy uid=shell nên **không kill trực tiếp được**, và khi adb chết thì 8080 là đường duy
 nhất còn lại.
 
+### Firmware 3448 chặn `adb shell pm` (đo 21/10/2026)
+
+Trên firmware Phicomm 3448, mọi lệnh adb shell **bắt đầu bằng `pm`** trả `error: closed`, kể cả
+`pm path`, trong khi `am`, `dumpsys`, `ls` vẫn chạy. Gọi thẳng cái mà `/system/bin/pm` gọi thì được:
+`export CLASSPATH=/system/framework/pm.jar; app_process /system/bin com.android.commands.pm.Pm install -r ...`.
+Không có shell 8080 trên loa này, nên cài APK bằng [`tools/install-apk.ps1`](tools/install-apk.ps1)
+(build + push + cài theo cách trên). Nâng firmware và đổi ngôn ngữ hệ thống: [docs/firmware-upgrade.md](docs/firmware-upgrade.md).
+
 
 ## Suggestions
 - Commit trên `main`, đừng để lẫn `.idea/*` (đang bị track — cân nhắc gitignore).

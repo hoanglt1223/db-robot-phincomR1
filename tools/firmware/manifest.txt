@@ -1,0 +1,10 @@
+# Phicomm R1 incremental OTA packages (official, signed by Phicomm). Not in git: see docs/firmware-upgrade.md.
+# file  from -> to  bytes  md5
+incremental-ota-3119.zip  3119 -> 3166  22477778  0ec426e340ef02bfce99e283b25fe269
+incremental-ota-3166.zip  3166 -> 3331  10198921  499dc5acb52f06c439dbfbc448214d05
+incremental-ota-3174.zip  3174 -> 3318  9370893  11331ffbe16e011002350805a3e02984
+incremental-ota-3318.zip  3318 -> 3331  3953164  bc2eea86d3e72d3097475604e9af319f
+incremental-ota-3331.zip  3331 -> 3448  10633740  4bab3b0d58690475cf24c861dd805359
+incremental-ota-3415.zip  3415 -> 3448  8134939  ffb637b235077752af7306567eae8ef4
+incremental-ota-3166.zip (One-click v2.3 variant)  3166 -> 3415  11733565  de411d80992fff4ff7338bf405ae1f41
+new_EchoService.apk (com.phicomm.speaker.player 0.2.5 patch)  -  5069726  64ef825e9b35cdea14e06359f599f8bb
