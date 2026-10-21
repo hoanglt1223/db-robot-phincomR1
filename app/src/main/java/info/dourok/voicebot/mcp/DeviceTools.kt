@@ -1,6 +1,7 @@
 package info.dourok.voicebot.mcp
 
 import info.dourok.voicebot.data.Settings
+import info.dourok.voicebot.lunar.LunarAnswers
 import info.dourok.voicebot.market.MarketPrices
 import info.dourok.voicebot.media.LocalMusicPlayer
 import info.dourok.voicebot.media.MusicService
@@ -180,6 +181,59 @@ object DeviceTools {
                 "Returns current Vietnamese retail fuel prices; always use it for fuel price questions.",
             noArguments(),
         ) { MarketPrices.fuelText() })
+        .add(tool(
+            "self.calendar.get_lunar_date",
+            "Đổi ngày dương lịch sang âm lịch Việt Nam: ngày tháng âm, tháng nhuận, can chi của ngày, " +
+                "tháng, năm và giờ hoàng đạo. Bỏ trống 'date' để lấy hôm nay tại nơi đặt loa. LUÔN " +
+                "gọi công cụ này khi người dùng hỏi hôm nay là ngày bao nhiêu âm lịch, mùng mấy, ngày " +
+                "can chi, giờ hoàng đạo; không tự tính. " +
+                "Converts a solar date (default today) to the Vietnamese lunar calendar.",
+            arguments(JSONObject().put(
+                "date",
+                JSONObject().put("type", "string")
+                    .put("description", "Ngày dương lịch dạng dd/mm/yyyy; bỏ trống là hôm nay.")
+            )),
+        ) { args -> LunarAnswers.lunarDate(LunarAnswers.parseDate(args.optString("date", ""), today()), today()) })
+        .add(tool(
+            "self.calendar.lunar_to_solar",
+            "Đổi ngày âm lịch sang dương lịch và cho biết còn bao nhiêu ngày. Dùng khi người dùng " +
+                "hỏi Tết, rằm, mùng một, giỗ, Trung thu, Vu Lan… rơi vào ngày nào dương lịch (Tết là " +
+                "1/1 âm, rằm tháng giêng 15/1, Trung thu 15/8, Vu Lan 15/7, ông Công ông Táo 23/12). " +
+                "Bỏ trống 'year' để dùng năm âm lịch hiện tại. " +
+                "Converts a Vietnamese lunar date to the solar calendar.",
+            arguments(
+                JSONObject()
+                    .put("day", JSONObject().put("type", "integer").put("description", "Ngày âm lịch, 1-30."))
+                    .put("month", JSONObject().put("type", "integer").put("description", "Tháng âm lịch, 1-12."))
+                    .put("year", JSONObject().put("type", "integer").put("description", "Năm âm lịch, ví dụ 2027; bỏ trống là năm nay."))
+                    .put("leap", JSONObject().put("type", "boolean").put("description", "true nếu là tháng nhuận.")),
+                "day", "month",
+            ),
+        ) { args ->
+            LunarAnswers.solarDate(
+                args.getInt("day"), args.getInt("month"), args.optInt("year", 0),
+                args.optBoolean("leap", false), today(),
+            )
+        })
+        .add(tool(
+            "self.calendar.get_horoscope_facts",
+            "Trả về dữ kiện để xem tử vi hôm nay cho một người theo ngày sinh dương lịch: ngày sinh " +
+                "âm lịch, tuổi can chi, mệnh ngũ hành, cung hoàng đạo, can chi hôm nay, quan hệ hợp/" +
+                "xung giữa ngày hôm nay và tuổi, giờ hoàng đạo. Gọi khi người dùng hỏi tử vi, vận hạn, " +
+                "hôm nay của tuổi mình thế nào. Dựa vào dữ kiện này mà luận ngắn gọn, vui vẻ về công " +
+                "việc, tài lộc, tình cảm, sức khỏe; nói rõ chỉ để tham khảo, đừng bịa dữ kiện khác. " +
+                "Returns the calendar facts for today's Vietnamese horoscope of a birth date.",
+            arguments(
+                JSONObject().put(
+                    "birth_date",
+                    JSONObject().put("type", "string").put("description", "Ngày sinh dương lịch dạng dd/mm/yyyy.")
+                ),
+                "birth_date",
+            ),
+        ) { args ->
+            val today = today()
+            LunarAnswers.horoscopeFacts(LunarAnswers.parseDate(args.getString("birth_date"), today), today)
+        })
 
     /** What the ESP32 devices return for `self.get_device_status`, with this speaker's own facts. */
     private fun deviceStatus(appVersion: String): String {
@@ -210,6 +264,9 @@ object DeviceTools {
             .put("application", JSONObject().put("name", "DB-Robot Phicomm R1").put("version", appVersion))
             .toString()
     }
+
+    /** Today in the speaker's own time zone, which is the owner's, not the server's. */
+    private fun today(): IntArray = LunarAnswers.today(LocationManager.zone, System.currentTimeMillis())
 
     private fun success(message: String): String =
         JSONObject().put("success", true).put("message", message).toString()
