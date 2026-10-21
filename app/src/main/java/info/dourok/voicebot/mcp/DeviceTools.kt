@@ -1,6 +1,7 @@
 package info.dourok.voicebot.mcp
 
 import info.dourok.voicebot.data.Settings
+import info.dourok.voicebot.market.MarketPrices
 import info.dourok.voicebot.media.LocalMusicPlayer
 import info.dourok.voicebot.media.MusicService
 import info.dourok.voicebot.media.RadioStations
@@ -15,7 +16,8 @@ import org.json.JSONObject
  * The names and arguments of the volume, music and radio tools are the ones xiaozhi ESP32 devices
  * use (78/xiaozhi-esp32 and its music/radio forks), so a server and a prompt written for those
  * devices drive this speaker the same way. Time and weather are this app's own: the server knows
- * neither where a given speaker stands nor what time it is there.
+ * neither where a given speaker stands nor what time it is there. Gold and fuel prices are too
+ * (see [MarketPrices]): a model asked for today's price otherwise answers from its training data.
  *
  * The descriptions are written for the language model, not for people: they are what makes it pick
  * the right tool -- and call it at all, rather than answer from its own guess.
@@ -160,6 +162,24 @@ object DeviceTools {
                 )
             )),
         ) { args -> LocationManager.weatherText(args.optString("city", "").trim()) })
+        .add(tool(
+            "self.market.get_gold_price",
+            "Trả về giá vàng hôm nay tại Việt Nam (mua vào, bán ra) theo bảng giá PNJ: vàng miếng " +
+                "SJC, nhẫn trơn 999.9, vàng nữ trang 24K, 18K, 14K… LUÔN gọi công cụ này khi người " +
+                "dùng hỏi giá vàng, giá vàng SJC, vàng nhẫn, vàng 9999; không tự đoán giá. Đọc giá " +
+                "bằng triệu đồng một lượng (hoặc một chỉ nếu họ hỏi theo chỉ). " +
+                "Returns today's Vietnamese gold buy/sell prices; always use it for gold price questions.",
+            noArguments(),
+        ) { MarketPrices.goldText() })
+        .add(tool(
+            "self.market.get_fuel_price",
+            "Trả về giá bán lẻ xăng dầu hiện hành tại Việt Nam của Petrolimex (vùng 1, vùng 2) và " +
+                "PVOIL: xăng E5 RON 92, xăng RON 95 (E10), dầu diesel DO, dầu hỏa, kèm mức tăng giảm " +
+                "kỳ điều chỉnh gần nhất. LUÔN gọi công cụ này khi người dùng hỏi giá xăng, giá dầu, " +
+                "xăng tăng hay giảm; không tự đoán giá. Nếu không nói vùng thì đọc giá vùng 1. " +
+                "Returns current Vietnamese retail fuel prices; always use it for fuel price questions.",
+            noArguments(),
+        ) { MarketPrices.fuelText() })
 
     /** What the ESP32 devices return for `self.get_device_status`, with this speaker's own facts. */
     private fun deviceStatus(appVersion: String): String {
