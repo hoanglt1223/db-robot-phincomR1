@@ -64,13 +64,18 @@ public final class RemoteMcpServers implements DeviceMcp.ToolSource {
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
     private final Log log;
     private volatile List<Entry> entries = Collections.emptyList();
+    private String configured;
 
     public RemoteMcpServers(Log log) {
         this.log = log;
     }
 
     /** Replace the server list with {@code json} and fetch every enabled server's tools. */
-    public void configure(String json) {
+    public synchronized void configure(String json) {
+        if (json != null && json.equals(configured)) {
+            return;   // the same list again: keep the tools already fetched
+        }
+        configured = json;
         List<Entry> next = new ArrayList<Entry>();
         Set<String> names = new HashSet<String>();
         JSONArray list = parse(json);

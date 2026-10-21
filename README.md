@@ -238,7 +238,7 @@ lý là `web.search`, cạnh các công cụ `self.*` của loa.
 - **Máy chủ chạy bằng dòng lệnh** (stdio, phần lớn máy chủ cài bằng `npx` hay `uvx`): loa không chạy
   được chúng, nên chạy chúng trên máy tính hoặc NAS cùng mạng qua một cổng chuyển, ví dụ
   ```
-  npx -y supergateway --stdio "npx -y @modelcontextprotocol/server-everything" --outputTransport streamableHttp --port 8000
+  npx -y supergateway --stdio "npx -y @modelcontextprotocol/server-everything" --outputTransport streamableHttp --stateful --port 8000
   ```
   rồi nhập `http://<IP-máy-đó>:8000/mcp`.
 - **Token** được gửi dưới dạng `Authorization: Bearer …`, lưu trên loa, không hiện lại trên trang
